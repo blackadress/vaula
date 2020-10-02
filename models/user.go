@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"fmt"
 )
 
 type user struct {
@@ -13,11 +14,12 @@ type user struct {
 
 func GetUsers(db *sql.DB) ([]user, error) {
 	rows, err := db.Query(
-		`SELECT id, username, password
+		`SELECT id, username, password, email
         FROM users`,
 	)
 
 	if err != nil {
+		fmt.Println("line 23")
 		return nil, err
 	}
 
@@ -30,6 +32,7 @@ func GetUsers(db *sql.DB) ([]user, error) {
 		if err := rows.Scan(
 			&u.ID, &u.Username, &u.Password, &u.Email,
 		); err != nil {
+			fmt.Println("line 35")
 			return nil, err
 		}
 		users = append(users, u)
