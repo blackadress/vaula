@@ -1,4 +1,4 @@
-package main
+package webapp
 
 import (
 	"database/sql"
@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/blackadress/handlers"
+	"github.com/blackadress/vaula/handlers"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -16,6 +16,8 @@ type App struct {
 	Router *mux.Router
 	DB     *sql.DB
 }
+
+var WebApp App
 
 func (a *App) Initialize(user, password, dbname string) {
 	connectionString :=

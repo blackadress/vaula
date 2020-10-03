@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	_ "github.com/blackadress/vaula/models"
+	"github.com/blackadress/vaula/webapp"
 	"os"
 )
-
-var WebApp App
 
 func main() {
 	WebApp = App{}
