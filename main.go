@@ -2,20 +2,30 @@ package main
 
 import (
 	"fmt"
-	_ "github.com/blackadress/vaula/models"
-	"github.com/blackadress/vaula/webapp"
+	"log"
 	"os"
+
+	"github.com/blackadress/vaula/handlers"
+	_ "github.com/blackadress/vaula/models"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	WebApp = App{}
+	app := handlers.App{}
 
-	WebApp.Initialize(
+	app.Initialize(
 		os.Getenv("APP_DB_USERNAME"),
 		os.Getenv("APP_DB_PASSWORD"),
 		os.Getenv("APP_DB_NAME"),
 	)
 
-	WebApp.Run(":8000")
+	app.Run(":8000")
 	fmt.Printf("WebApp running on port 8000")
+}
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Print("No '.evn' found")
+	}
 }
