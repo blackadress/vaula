@@ -11,8 +11,9 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var app = handlers.App{}
+
 func main() {
-	app := handlers.App{}
 
 	app.Initialize(
 		os.Getenv("APP_DB_USERNAME"),

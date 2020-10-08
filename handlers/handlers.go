@@ -6,13 +6,14 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/blackadress/vaula/globals"
+
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 )
 
 type App struct {
 	Router *mux.Router
-	DB     *sql.DB
 }
 
 func (a *App) Initialize(user, password, dbname string) {
@@ -22,7 +23,7 @@ func (a *App) Initialize(user, password, dbname string) {
 			user, password, dbname)
 
 	var err error
-	a.DB, err = sql.Open("postgres", connectionString)
+	globals.DB, err = sql.Open("postgres", connectionString)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,11 +33,14 @@ func (a *App) Initialize(user, password, dbname string) {
 }
 
 func (a *App) initializeRoutes() {
-	a.Router.Handle("/users", getUsersHandler(*a)).Methods("GET")
-	a.Router.Handle("/users", createUser(*a)).Methods("POST")
-	a.Router.Handle("/users/{id:[0-9]+}", getUserByIdHandler(*a)).Methods("GET")
-	a.Router.Handle("/users/{id:[0-9]+}", updateUserHandler(*a)).Methods("PUT")
-	a.Router.Handle("/users/{id:[0-9]+}", deleteUser(*a)).Methods("DELETE")
+	//a.Router.HandleFunc("/users", getUsersHandler).Methods("GET")
+	// auth
+	a.Router.HandleFunc("/api/token", auth).Methods("GET")
+	a.Router.HandleFunc("/users", getUsersHandler).Methods("GET")
+	a.Router.HandleFunc("/users", createUser).Methods("POST")
+	a.Router.HandleFunc("/users/{id:[0-9]+}", getUserByIdHandler).Methods("GET")
+	a.Router.HandleFunc("/users/{id:[0-9]+}", updateUserHandler).Methods("PUT")
+	a.Router.HandleFunc("/users/{id:[0-9]+}", deleteUser).Methods("DELETE")
 }
 
 func (a *App) Run(addr string) {

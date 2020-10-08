@@ -5,126 +5,121 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 
+	"github.com/blackadress/vaula/globals"
 	"github.com/blackadress/vaula/models"
+
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 
 	_ "github.com/lib/pq"
 )
 
-func HelloFromUserHandlers() {
-	fmt.Printf("Hello from handlers\n")
+func getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
+	}
+
+	u := models.User{ID: id}
+	if err := u.GetUser(globals.DB); err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			respondWithError(w, http.StatusNotFound, "User not found")
+		default:
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	respondWithJSON(w, http.StatusOK, u)
 }
 
-func getUserByIdHandler(app App) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			vars := mux.Vars(r)
-			id, err := strconv.Atoi(vars["id"])
-			if err != nil {
-				respondWithError(w, http.StatusBadRequest, "Invalid user ID")
-			}
+func getUsersHandler(w http.ResponseWriter, r *http.Request) {
+	users, err := models.GetUsers(globals.DB)
 
-			u := models.User{ID: id}
-			if err := u.GetUser(app.DB); err != nil {
-				switch err {
-				case sql.ErrNoRows:
-					respondWithError(w, http.StatusNotFound, "User not found")
-				default:
-					respondWithError(w, http.StatusInternalServerError, err.Error())
-				}
-				return
-			}
-			respondWithJSON(w, http.StatusOK, u)
-		})
+	if err != nil {
+		fmt.Println("error line 22")
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, users)
 }
 
-func getUsersHandler(app App) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			users, err := models.GetUsers(app.DB)
+func createUser(w http.ResponseWriter, r *http.Request) {
+	var u models.User
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&u); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid payload")
+		return
+	}
+	defer r.Body.Close()
 
-			if err != nil {
-				fmt.Println("error line 22")
-				respondWithError(w, http.StatusInternalServerError, err.Error())
-				return
-			}
+	// hashing the password
+	u.Password = hashAndSalt([]byte(u.Password))
 
-			respondWithJSON(w, http.StatusOK, users)
-		})
+	if err := u.CreateUser(globals.DB); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusCreated, u)
 }
 
-func createUser(app App) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			var u models.User
-			decoder := json.NewDecoder(r.Body)
-			if err := decoder.Decode(&u); err != nil {
-				respondWithError(w, http.StatusBadRequest, "Invalid payload")
-				return
-			}
-			defer r.Body.Close()
+func updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
 
-			// hashing the password
-			u.Password = hashAndSalt([]byte(u.Password))
+	var u models.User
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&u); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid payload")
+		return
+	}
+	defer r.Body.Close()
 
-			if err := u.CreateUser(app.DB); err != nil {
-				respondWithError(w, http.StatusInternalServerError, err.Error())
-				return
-			}
+	u.ID = id
 
-			respondWithJSON(w, http.StatusCreated, u)
-		})
+	if err := u.UpdateUser(globals.DB); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, u)
 }
 
-func updateUserHandler(app App) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			vars := mux.Vars(r)
-			id, err := strconv.Atoi(vars["id"])
-			if err != nil {
-				respondWithError(w, http.StatusBadRequest, "Invalid user ID")
-				return
-			}
+func deleteUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
 
-			var u models.User
-			decoder := json.NewDecoder(r.Body)
-			if err := decoder.Decode(&u); err != nil {
-				respondWithError(w, http.StatusBadRequest, "Invalid payload")
-				return
-			}
-			defer r.Body.Close()
-
-			u.ID = id
-
-			if err := u.UpdateUser(app.DB); err != nil {
-				respondWithError(w, http.StatusInternalServerError, err.Error())
-				return
-			}
-
-			respondWithJSON(w, http.StatusOK, u)
-		})
+	u := models.User{ID: id}
+	if err := u.DeleteUser(globals.DB); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 }
 
-func deleteUser(app App) http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			vars := mux.Vars(r)
-			id, err := strconv.Atoi(vars["id"])
-			if err != nil {
-				respondWithError(w, http.StatusBadRequest, "Invalid user ID")
-				return
-			}
+func auth(w http.ResponseWriter, r *http.Request) {
+	validToken, err := generateJWT()
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
 
-			u := models.User{ID: id}
-			if err := u.DeleteUser(app.DB); err != nil {
-				respondWithError(w, http.StatusInternalServerError, err.Error())
-				return
-			}
-
-		})
+	respondWithJSON(w, http.StatusOK, map[string]string{"token": validToken})
 }
 
 func hashAndSalt(pwd []byte) string {
@@ -136,9 +131,20 @@ func hashAndSalt(pwd []byte) string {
 	return string(hash)
 }
 
-//func asd(app App) http.Handler {
-//return http.HandlerFunc(
-//func(w http.ResponseWriter, r *http.Request) {
-//asd
-//})
-//}
+func generateJWT() (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"authorized": true,
+		"exp":        time.Now().Add(time.Minute * 30).Unix(),
+	})
+
+	// get this from env
+	secretKey := os.Getenv("SECRET_KEY")
+	tokenString, err := token.SignedString(secretKey)
+
+	if err != nil {
+		fmt.Errorf("Something went wrong: %s", err.Error())
+		return "", err
+	}
+
+	return tokenString, nil
+}

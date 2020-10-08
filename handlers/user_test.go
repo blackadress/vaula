@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/blackadress/vaula/globals"
 	"github.com/joho/godotenv"
 )
 
@@ -43,14 +44,14 @@ CREATE TABLE IF NOT EXISTS products
 `
 
 func ensureTableExists() {
-	if _, err := a.DB.Exec(tableCreationQuery); err != nil {
+	if _, err := globals.DB.Exec(tableCreationQuery); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func clearTable() {
-	a.DB.Exec("DELETE FROM users")
-	a.DB.Exec("ALTER SEQUENCE users_id_seq RESTART WITH 1")
+	globals.DB.Exec("DELETE FROM users")
+	globals.DB.Exec("ALTER SEQUENCE users_id_seq RESTART WITH 1")
 }
 
 func TestEmptyTable(t *testing.T) {
@@ -197,7 +198,7 @@ func addUsers(count int) {
 	}
 
 	for i := 0; i < count; i++ {
-		a.DB.Exec(`
+		globals.DB.Exec(`
             INSERT INTO users(username, password, email)
             VALUES($1, $2, $3)`,
 			"user_"+strconv.Itoa(i),
