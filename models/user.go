@@ -21,6 +21,15 @@ func (u *User) GetUser(db *sql.DB) error {
 	).Scan(&u.Username, &u.Password, &u.Email)
 }
 
+func (u *User) GetUserByUsername(db *sql.DB) error {
+	return db.QueryRow(
+		`SELECT id, password, email
+        FROM users
+        WHERE username=$1`,
+		u.Username,
+	).Scan(&u.ID, &u.Password, &u.Email)
+}
+
 func (u *User) UpdateUser(db *sql.DB) error {
 	_, err := db.Exec(
 		`UPDATE users SET username=$1, password=$2, email=$3
@@ -43,7 +52,7 @@ func (u *User) DeleteUser(db *sql.DB) error {
 }
 
 func (u *User) CreateUser(db *sql.DB) error {
-	err := db.QueryRow(
+	return db.QueryRow(
 		`INSERT INTO users(username, password, email)
         VALUES($1, $2, $3)
         RETURNING id`,
@@ -51,11 +60,6 @@ func (u *User) CreateUser(db *sql.DB) error {
 		u.Password,
 		u.Email,
 	).Scan(&u.ID)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func GetUsers(db *sql.DB) ([]User, error) {

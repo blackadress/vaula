@@ -33,14 +33,16 @@ func (a *App) Initialize(user, password, dbname string) {
 }
 
 func (a *App) initializeRoutes() {
-	//a.Router.HandleFunc("/users", getUsersHandler).Methods("GET")
 	// auth
-	a.Router.HandleFunc("/api/token", auth).Methods("GET")
-	a.Router.HandleFunc("/users", getUsersHandler).Methods("GET")
-	a.Router.HandleFunc("/users", createUser).Methods("POST")
-	a.Router.HandleFunc("/users/{id:[0-9]+}", getUserByIdHandler).Methods("GET")
-	a.Router.HandleFunc("/users/{id:[0-9]+}", updateUserHandler).Methods("PUT")
-	a.Router.HandleFunc("/users/{id:[0-9]+}", deleteUser).Methods("DELETE")
+	a.Router.HandleFunc("/api/token", auth).Methods("POST")
+	a.Router.HandleFunc("/api/refresh", refresh).Methods("GET")
+
+	// users
+	a.Router.Handle("/users", isAuthorized(getUsersHandler)).Methods("GET")
+	a.Router.Handle("/users", isAuthorized(createUser)).Methods("POST")
+	a.Router.Handle("/users/{id:[0-9]+}", isAuthorized(getUserByIdHandler)).Methods("GET")
+	a.Router.Handle("/users/{id:[0-9]+}", isAuthorized(updateUserHandler)).Methods("PUT")
+	a.Router.Handle("/users/{id:[0-9]+}", isAuthorized(deleteUser)).Methods("DELETE")
 }
 
 func (a *App) Run(addr string) {
