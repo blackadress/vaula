@@ -1,7 +1,5 @@
 package globals
 
-import (
-	"database/sql"
-)
+import "github.com/jackc/pgx/v4/pgxpool"
 
-var DB *sql.DB
+var DB *pgxpool.Pool

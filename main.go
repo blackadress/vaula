@@ -9,6 +9,7 @@ import (
 	_ "github.com/blackadress/vaula/models"
 
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 var app = handlers.App{}
@@ -27,6 +28,6 @@ func main() {
 
 func init() {
 	if err := godotenv.Load(); err != nil {
-		log.Print("No '.evn' found")
+		log.Print("No '.env' found")
 	}
 }

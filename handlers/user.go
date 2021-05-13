@@ -4,15 +4,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
-	"os"
 	"strconv"
-	"time"
 
 	"github.com/blackadress/vaula/globals"
 	"github.com/blackadress/vaula/models"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 
@@ -112,68 +110,64 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type Claims struct {
-	UserId int `json:"userId"`
-	jwt.StandardClaims
-}
+//func refresh(w http.ResponseWriter, r *http.Request) {
+//if r.Header["Token"] == nil {
+//respondWithError(w, http.StatusBadRequest, "")
+//return
+//}
+//claims := &Claims{}
+//token, err := jwt.ParseWithClaims(
+//r.Header["Token"][0],
+//claims,
+//func(token *jwt.Token) (interface{}, error) {
+//if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+//return nil, fmt.Errorf("There was an error while refreshing token")
+//}
+//return []byte(os.Getenv("SECRET_KEY")), nil
+//})
 
-type Token struct {
-	UserId      int       `json:"userId"`
-	AccessToken string    `json:"accessToken"`
-	Expires     time.Time `json:"expires"`
-}
+//if err != nil {
+//if err == jwt.ErrSignatureInvalid {
+//respondWithError(w, http.StatusUnauthorized, err.Error())
+//return
+//}
+//respondWithError(w, http.StatusBadRequest, "Token Expired")
+//return
+//}
 
-func refresh(w http.ResponseWriter, r *http.Request) {
-	if r.Header["Token"] == nil {
-		respondWithError(w, http.StatusBadRequest, "")
-		return
-	}
-	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(r.Header["Token"][0], claims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("There was an error while refreshing token")
-		}
-		return []byte(os.Getenv("SECRET_KEY")), nil
-	})
+//if !token.Valid {
+//respondWithError(w, http.StatusUnauthorized, "Invalid token")
+//return
+//}
 
-	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			respondWithError(w, http.StatusUnauthorized, err.Error())
-			return
-		}
-		respondWithError(w, http.StatusBadRequest, "Token Expired")
-		return
-	}
+//if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
+//respondWithError(w, http.StatusUnauthorized, "Too soon to request a new token")
+//return
+//}
+//expirationTime := time.Now().Add(30 * time.Minute)
+//tokenString, err := generateJWT(expirationTime, claims.UserId)
+//if err != nil {
+//respondWithError(w, http.StatusInternalServerError, err.Error())
+//return
+//}
 
-	if !token.Valid {
-		respondWithError(w, http.StatusUnauthorized, "Invalid token")
-		return
-	}
-
-	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
-		respondWithError(w, http.StatusUnauthorized, "Too soon to request a new token")
-		return
-	}
-	expirationTime := time.Now().Add(30 * time.Minute)
-	tokenString, err := generateJWT(expirationTime, claims.UserId)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	tkn := Token{
-		UserId:      claims.UserId,
-		AccessToken: tokenString,
-		Expires:     expirationTime,
-	}
-	respondWithJSON(w, http.StatusOK, tkn)
-	return
-}
+//tkn := Token{
+//UserId:      claims.UserId,
+//AccessToken: tokenString,
+//Expires:     expirationTime,
+//}
+//respondWithJSON(w, http.StatusOK, tkn)
+//return
+//}
 
 func auth(w http.ResponseWriter, r *http.Request) {
+	// attackers shouldn't know if a username exists on the DB
+	// so we should roughly take the same amount of time
+	// either if the user exists or doesn't
 	var u models.User
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&u); err != nil {
+		log.Printf("Formato json invalido")
 		respondWithError(w, http.StatusBadRequest, "Invalid user or password")
 		return
 	}
@@ -182,30 +176,49 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	var uFetched models.User
 	uFetched.Username = u.Username
 
+	// therefore, this piece of code can't respond without using a 'CompareHashAndPassword',
+	// maybe write to Log for internal debugging purposes
+	// but can't send a response just after checking
+	// if the username exists on the DB
 	if err := uFetched.GetUserByUsername(globals.DB); err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		log.Printf("No existe usuario en la DB")
+		bcrypt.CompareHashAndPassword([]byte(uFetched.Password), []byte("thereIsNoUser"))
+		respondWithError(w, http.StatusBadRequest, "Invalid user or password")
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(uFetched.Password), []byte(u.Password)); err != nil {
 		// Invalid password
+		log.Printf("Password invalida")
 		respondWithError(w, http.StatusBadRequest, "Invalid user or password")
 		return
 	} else {
-		expirationTime := time.Now().Add(time.Minute * 30)
-		validToken, err := generateJWT(expirationTime, uFetched.ID)
+		token, err := uFetched.GetJWTForUser()
 		if err != nil {
-			respondWithError(w, http.StatusUnauthorized, err.Error())
-			return
+			// error inesperado loggeado en la capa de modelo
+			respondWithError(w, http.StatusBadRequest, "Invalid user or password")
 		}
 
-		token := Token{
-			UserId:      uFetched.ID,
-			AccessToken: validToken,
-			Expires:     expirationTime,
-		}
 		respondWithJSON(w, http.StatusOK, token)
 	}
+}
+
+func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header["Token"] != nil {
+			isTokenValid, err := ValidateToken(r.Header["Token"][0])
+
+			if err != nil {
+				respondWithError(w, http.StatusBadRequest, "Wrong user")
+			}
+
+			if isTokenValid {
+				endpoint(w, r)
+			}
+		} else {
+			respondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		}
+	})
 }
 
 func hashAndSalt(pwd []byte) string {
@@ -215,50 +228,4 @@ func hashAndSalt(pwd []byte) string {
 	}
 
 	return string(hash)
-}
-
-func generateJWT(expirationTime time.Time, userId int) (string, error) {
-	claims := &Claims{
-		UserId: userId,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// get this from env
-	secretKey := []byte(os.Getenv("SECRET_KEY"))
-	tokenString, err := token.SignedString(secretKey)
-
-	if err != nil {
-		fmt.Errorf("Something went wrong: %s", err.Error())
-		return "", err
-	}
-
-	return tokenString, nil
-}
-
-func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		secretKey := []byte(os.Getenv("SECRET_KEY"))
-		if r.Header["Token"] != nil {
-			claims := &Claims{}
-			token, err := jwt.ParseWithClaims(r.Header["Token"][0], claims, func(token *jwt.Token) (interface{}, error) {
-				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, fmt.Errorf("There was an error while validatin token")
-				}
-				return secretKey, nil
-			})
-
-			if err != nil {
-				respondWithError(w, http.StatusBadRequest, "Wrong user")
-			}
-
-			if token.Valid {
-				endpoint(w, r)
-			}
-		} else {
-			respondWithError(w, http.StatusUnauthorized, "Unauthorized")
-		}
-	})
 }

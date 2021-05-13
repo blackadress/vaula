@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -28,6 +29,7 @@ func TestMain(m *testing.M) {
 	)
 
 	ensureTableExists()
+	ensureUserExists()
 	code := m.Run()
 	clearTable()
 	os.Exit(code)
@@ -35,23 +37,38 @@ func TestMain(m *testing.M) {
 
 const tableCreationQuery = `
 CREATE TABLE IF NOT EXISTS products
-    (
-        id SERIAL,
-        name TEXT NOT NULL,
-        price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
-        CONSTRAINT products_pkey PRIMARY KEY (id)
-    )
+	(
+		id SERIAL,
+		name TEXT NOT NULL,
+		price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+		CONSTRAINT products_pkey PRIMARY KEY (id)
+	)
+`
+
+const userInsertionQuery = `
+	INSERT INTO users(username, password, email)
+	VALUES('prueba', 'prueba', 'prueba@mail.com')
 `
 
 func ensureTableExists() {
-	if _, err := globals.DB.Exec(tableCreationQuery); err != nil {
+	if _, err := globals.DB.Exec(context.Background(), tableCreationQuery); err != nil {
 		log.Fatal(err)
 	}
 }
 
+func ensureUserExists() {
+	if err := globals.DB.QueryRow(context.Background(), userInsertionQuery); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func getTestJWT() string {
+	testUser = User{Username: "prueba", Password: "prueba", Email: "prueba@mail.com"}
+}
+
 func clearTable() {
-	globals.DB.Exec("DELETE FROM users")
-	globals.DB.Exec("ALTER SEQUENCE users_id_seq RESTART WITH 1")
+	globals.DB.Exec(context.Background(), "DELETE FROM users")
+	globals.DB.Exec(context.Background(), "ALTER SEQUENCE users_id_seq RESTART WITH 1")
 }
 
 func TestEmptyTable(t *testing.T) {
@@ -87,7 +104,12 @@ func TestGetNonExistentUser(t *testing.T) {
 func TestCreateUser(t *testing.T) {
 	clearTable()
 
-	var jsonStr = []byte(`{"username": "user_test", "password": "1234", "email": "user_test@test.ts"}`)
+	var jsonStr = []byte(`
+		{
+			"username": "user_test",
+			"password": "1234",
+			"email": "user_test@test.ts"
+		}`)
 	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -198,9 +220,10 @@ func addUsers(count int) {
 	}
 
 	for i := 0; i < count; i++ {
-		globals.DB.Exec(`
-            INSERT INTO users(username, password, email)
-            VALUES($1, $2, $3)`,
+		globals.DB.Exec(
+			context.Background(),
+			`INSERT INTO users(username, password, email)
+			VALUES($1, $2, $3)`,
 			"user_"+strconv.Itoa(i),
 			"pass"+strconv.Itoa(i),
 			"em"+strconv.Itoa(i)+"@test.ts",

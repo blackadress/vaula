@@ -1,15 +1,16 @@
 package handlers
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/blackadress/vaula/globals"
 
 	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type App struct {
@@ -17,16 +18,17 @@ type App struct {
 }
 
 func (a *App) Initialize(user, password, dbname string) {
-	connectionString :=
-		fmt.Sprintf(
-			"user=%s password=%s dbname=%s sslmode=disable",
-			user, password, dbname)
+	connectionString := fmt.Sprintf("postgres://%s:%s@localhost:5432/%s", user, password, dbname)
+	fmt.Printf("Connection string %s \n", connectionString)
 
 	var err error
-	globals.DB, err = sql.Open("postgres", connectionString)
+	globals.DB, err = pgxpool.Connect(context.Background(), connectionString)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		log.Print(err)
+		os.Exit(1)
 	}
+	log.Print("Si conecta con db")
 
 	a.Router = mux.NewRouter()
 	a.initializeRoutes()
