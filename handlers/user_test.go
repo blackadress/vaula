@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/blackadress/vaula/globals"
 	"github.com/joho/godotenv"
@@ -29,19 +31,19 @@ func TestMain(m *testing.M) {
 	)
 
 	ensureTableExists()
-	ensureUserExists()
 	code := m.Run()
-	clearTable()
+	//clearTable()
 	os.Exit(code)
 }
 
 const tableCreationQuery = `
-CREATE TABLE IF NOT EXISTS products
+CREATE TABLE IF NOT EXISTS users
 	(
 		id SERIAL,
-		name TEXT NOT NULL,
-		price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
-		CONSTRAINT products_pkey PRIMARY KEY (id)
+		username TEXT NOT NULL,
+		password TEXT NOT NULL,
+		email TEXT NOT NULL,
+		CONSTRAINT user_pkey PRIMARY KEY (id)
 	)
 `
 
@@ -50,20 +52,49 @@ const userInsertionQuery = `
 	VALUES('prueba', 'prueba', 'prueba@mail.com')
 `
 
+type Temp_jwt struct {
+	UserId      int
+	AccessToken string
+	Expires     time.Time
+}
+
 func ensureTableExists() {
 	if _, err := globals.DB.Exec(context.Background(), tableCreationQuery); err != nil {
-		log.Fatal(err)
+		log.Printf("%s", err)
 	}
+	//if _, err := globals.DB.Exec(context.Background(), userInsertionQuery); err != nil {
+	//log.Printf("%s", err)
+	//}
 }
 
-func ensureUserExists() {
-	if err := globals.DB.QueryRow(context.Background(), userInsertionQuery); err != nil {
+func getTestJWT() Temp_jwt {
+	userJson, err := json.Marshal(map[string]string{
+		"username": "user_test", "password": "1234"})
+	if err != nil {
 		log.Fatal(err)
 	}
-}
+	//a.Router.Get()
 
-func getTestJWT() string {
-	testUser = User{Username: "prueba", Password: "prueba", Email: "prueba@mail.com"}
+	resp, err := http.Post("http://localhost:8000/api/token",
+		"application/json", bytes.NewBuffer(userJson))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	var jwt Temp_jwt
+	res, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	json.Unmarshal(res, &jwt)
+
+	resTxt := string(res)
+	log.Print(resTxt)
+
+	return jwt
+	//checkResponseCode(t, http.StatusOK, response.Code)
+
 }
 
 func clearTable() {
@@ -71,10 +102,16 @@ func clearTable() {
 	globals.DB.Exec(context.Background(), "ALTER SEQUENCE users_id_seq RESTART WITH 1")
 }
 
+/*
 func TestEmptyTable(t *testing.T) {
 	clearTable()
 
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+	log.Printf(token_str)
+
 	req, _ := http.NewRequest("GET", "/users", nil)
+	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
@@ -86,8 +123,12 @@ func TestEmptyTable(t *testing.T) {
 
 func TestGetNonExistentUser(t *testing.T) {
 	clearTable()
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+	log.Printf(token_str)
 
 	req, _ := http.NewRequest("GET", "/users/11", nil)
+	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 
 	checkResponseCode(t, http.StatusNotFound, response.Code)
@@ -100,16 +141,17 @@ func TestGetNonExistentUser(t *testing.T) {
 			m["error"])
 	}
 }
+*/
 
 func TestCreateUser(t *testing.T) {
 	clearTable()
 
 	var jsonStr = []byte(`
-		{
-			"username": "user_test",
-			"password": "1234",
-			"email": "user_test@test.ts"
-		}`)
+	{
+		"username": "user_test",
+		"password": "1234",
+		"email": "user_test@test.ts"
+	}`)
 	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 
@@ -136,11 +178,16 @@ func TestCreateUser(t *testing.T) {
 	}
 }
 
+/*
 func TestGetUser(t *testing.T) {
 	clearTable()
 	addUsers(1)
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+	log.Printf(token_str)
 
 	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
@@ -149,16 +196,20 @@ func TestGetUser(t *testing.T) {
 func TestUpdateProduct(t *testing.T) {
 	clearTable()
 	addUsers(1)
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+	log.Printf(token_str)
 
 	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 	var originalUser map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &originalUser)
 
 	var jsonStr = []byte(`{
-        "username": "user_test_updated",
-        "password": "1234_updated",
-        "email": "user_test_updated@test.ts"}`)
+		"username": "user_test_updated",
+		"password": "1234_updated",
+		"email": "user_test_updated@test.ts"}`)
 
 	req, _ = http.NewRequest("PUT", "/users/1", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
@@ -204,8 +255,11 @@ func TestUpdateProduct(t *testing.T) {
 func TestDeleteProduct(t *testing.T) {
 	clearTable()
 	addUsers(1)
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
 	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
 
@@ -213,6 +267,7 @@ func TestDeleteProduct(t *testing.T) {
 	response = executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
 }
+*/
 
 func addUsers(count int) {
 	if count < 1 {

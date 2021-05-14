@@ -37,11 +37,11 @@ func (a *App) Initialize(user, password, dbname string) {
 func (a *App) initializeRoutes() {
 	// auth
 	a.Router.HandleFunc("/api/token", auth).Methods("POST")
-	a.Router.HandleFunc("/api/refresh", refresh).Methods("GET")
+	//a.Router.HandleFunc("/api/refresh", refresh).Methods("GET")
 
 	// users
 	a.Router.Handle("/users", isAuthorized(getUsersHandler)).Methods("GET")
-	a.Router.Handle("/users", isAuthorized(createUser)).Methods("POST")
+	a.Router.Handle("/users", pass(createUser)).Methods("POST")
 	a.Router.Handle("/users/{id:[0-9]+}", isAuthorized(getUserByIdHandler)).Methods("GET")
 	a.Router.Handle("/users/{id:[0-9]+}", isAuthorized(updateUserHandler)).Methods("PUT")
 	a.Router.Handle("/users/{id:[0-9]+}", isAuthorized(deleteUser)).Methods("DELETE")

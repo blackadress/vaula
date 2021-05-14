@@ -165,12 +165,14 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	// so we should roughly take the same amount of time
 	// either if the user exists or doesn't
 	var u models.User
+	//josn.Unmarshal(r.Body)
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&u); err != nil {
 		log.Printf("Formato json invalido")
 		respondWithError(w, http.StatusBadRequest, "Invalid user or password")
 		return
 	}
+	fmt.Printf("user: %s, pass: %s\n", u.Username, u.Password)
 	defer r.Body.Close()
 
 	var uFetched models.User
@@ -203,10 +205,16 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func pass(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		endpoint(w, r)
+	})
+}
+
 func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header["Token"] != nil {
-			isTokenValid, err := ValidateToken(r.Header["Token"][0])
+			isTokenValid, err := models.ValidateToken(r.Header["Token"][0])
 
 			if err != nil {
 				respondWithError(w, http.StatusBadRequest, "Wrong user")
