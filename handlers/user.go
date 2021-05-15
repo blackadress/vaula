@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -12,12 +11,12 @@ import (
 	"github.com/blackadress/vaula/models"
 
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v4"
 	"golang.org/x/crypto/bcrypt"
-
-	_ "github.com/lib/pq"
 )
 
 func getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("GET Getting user by Id")
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -27,7 +26,7 @@ func getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
 	u := models.User{ID: id}
 	if err := u.GetUser(globals.DB); err != nil {
 		switch err {
-		case sql.ErrNoRows:
+		case pgx.ErrNoRows:
 			respondWithError(w, http.StatusNotFound, "User not found")
 		default:
 			respondWithError(w, http.StatusInternalServerError, err.Error())
@@ -38,10 +37,10 @@ func getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUsersHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("GET Getting list of all users")
 	users, err := models.GetUsers(globals.DB)
 
 	if err != nil {
-		fmt.Println("error line 22")
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -172,7 +171,7 @@ func auth(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, "Invalid user or password")
 		return
 	}
-	fmt.Printf("user: %s, pass: %s\n", u.Username, u.Password)
+	//fmt.Printf("user: %s, pass: %s\n", u.Username, u.Password)
 	defer r.Body.Close()
 
 	var uFetched models.User
@@ -213,8 +212,8 @@ func pass(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
 
 func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header["Token"] != nil {
-			isTokenValid, err := models.ValidateToken(r.Header["Token"][0])
+		if r.Header["Authorization"] != nil {
+			isTokenValid, err := models.ValidateToken(r.Header["Authorization"][0])
 
 			if err != nil {
 				respondWithError(w, http.StatusBadRequest, "Wrong user")
@@ -224,6 +223,11 @@ func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handle
 				endpoint(w, r)
 			}
 		} else {
+			var s string
+			for key, val := range r.Header {
+				s = fmt.Sprintf("%s=\"%s\"\n", key, val)
+			}
+			println("no hay ['Authorization'], en los headers ", s)
 			respondWithError(w, http.StatusUnauthorized, "Unauthorized")
 		}
 	})
@@ -233,6 +237,7 @@ func hashAndSalt(pwd []byte) string {
 	hash, err := bcrypt.GenerateFromPassword(pwd, bcrypt.MinCost)
 	if err != nil {
 		fmt.Println(err)
+		return ""
 	}
 
 	return string(hash)

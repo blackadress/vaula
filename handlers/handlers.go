@@ -25,7 +25,7 @@ func (a *App) Initialize(user, password, dbname string) {
 	globals.DB, err = pgxpool.Connect(context.Background(), connectionString)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		log.Print(err)
+		log.Fatalf("Unable to connect to database: %v", err)
 		os.Exit(1)
 	}
 	log.Print("Si conecta con db")
