@@ -9,7 +9,6 @@ import (
 	_ "github.com/blackadress/vaula/models"
 
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 )
 
 var app = handlers.App{}

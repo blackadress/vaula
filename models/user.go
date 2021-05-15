@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -22,8 +23,8 @@ func (u *User) GetUser(db *pgxpool.Pool) error {
 	return db.QueryRow(
 		context.Background(),
 		`SELECT username, password, email
-        FROM users
-        WHERE id=$1`,
+		FROM users
+		WHERE id=$1`,
 		u.ID,
 	).Scan(&u.Username, &u.Password, &u.Email)
 }
@@ -31,8 +32,8 @@ func (u *User) GetUser(db *pgxpool.Pool) error {
 func (u *User) GetUserByUsername(db *pgxpool.Pool) error {
 	return db.QueryRow(context.Background(),
 		`SELECT id, password, email
-        FROM users
-        WHERE username=$1`,
+		FROM users
+		WHERE username=$1`,
 		u.Username,
 	).Scan(&u.ID, &u.Password, &u.Email)
 }
@@ -40,7 +41,7 @@ func (u *User) GetUserByUsername(db *pgxpool.Pool) error {
 func (u *User) UpdateUser(db *pgxpool.Pool) error {
 	_, err := db.Exec(context.Background(),
 		`UPDATE users SET username=$1, password=$2, email=$3
-        WHERE id=$4`,
+		WHERE id=$4`,
 		u.Username,
 		u.Password,
 		u.Email,
@@ -61,8 +62,8 @@ func (u *User) DeleteUser(db *pgxpool.Pool) error {
 func (u *User) CreateUser(db *pgxpool.Pool) error {
 	return db.QueryRow(context.Background(),
 		`INSERT INTO users(username, password, email)
-        VALUES($1, $2, $3)
-        RETURNING id`,
+		VALUES($1, $2, $3)
+		RETURNING id`,
 		u.Username,
 		u.Password,
 		u.Email,
@@ -71,8 +72,8 @@ func (u *User) CreateUser(db *pgxpool.Pool) error {
 
 func GetUsers(db *pgxpool.Pool) ([]User, error) {
 	rows, err := db.Query(context.Background(),
-		`SELECT id, username, password, email
-        FROM users`,
+		`SELECT id, username, email
+		FROM users`,
 	)
 
 	if err != nil {
@@ -86,9 +87,9 @@ func GetUsers(db *pgxpool.Pool) ([]User, error) {
 	for rows.Next() {
 		var u User
 		if err := rows.Scan(
-			&u.ID, &u.Username, &u.Password, &u.Email,
+			&u.ID, &u.Username, &u.Email,
 		); err != nil {
-			fmt.Println("line 35")
+			log.Println("The rows we got from the DB can't be 'Scan'(ed)")
 			return nil, err
 		}
 		users = append(users, u)
@@ -128,9 +129,25 @@ func (u *User) GetJWTForUser() (JWToken, error) {
 
 func ValidateToken(bearerToken string) (bool, error) {
 	secretKey := []byte(os.Getenv("SECRET_KEY"))
+
+	parseToken := func(tkn string) (string, error) {
+		re := regexp.MustCompile(`Bearer\s(?P<token>.*)`)
+		captured := re.FindStringSubmatch(tkn)
+		if captured == nil {
+			return "", fmt.Errorf("Wrong Authorization header format")
+		}
+		parsedTkn := captured[1]
+		return parsedTkn, nil
+	}
+
+	parsedTkn, err := parseToken(bearerToken)
+	if err != nil {
+		return false, err
+	}
+
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(
-		bearerToken,
+		parsedTkn,
 		claims,
 		func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -140,6 +157,9 @@ func ValidateToken(bearerToken string) (bool, error) {
 			}
 			return secretKey, nil
 		})
+	if err != nil {
+		return false, err
+	}
 
 	return token.Valid, err
 }
