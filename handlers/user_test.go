@@ -1,5 +1,8 @@
 package handlers
 
+// los test necesitan que la aplicacion este funcionando para
+// poder probar los JWT
+
 import (
 	"bytes"
 	"context"
@@ -11,7 +14,6 @@ import (
 	"os"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/blackadress/vaula/globals"
 	"github.com/joho/godotenv"
@@ -35,7 +37,7 @@ func TestMain(m *testing.M) {
 
 	ensureTableExists()
 	code := m.Run()
-	//clearTable()
+	clearTable()
 	os.Exit(code)
 }
 
@@ -190,7 +192,7 @@ func TestUpdateProduct(t *testing.T) {
 	}
 }
 
-func TestDeleteProduct(t *testing.T) {
+func TestDeleteUser(t *testing.T) {
 	clearTable()
 	addUsers(1)
 	ensureAuthorizedUserExists()
@@ -206,6 +208,14 @@ func TestDeleteProduct(t *testing.T) {
 	req.Header.Set("Authorization", token_str)
 	response = executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
+}
+
+func TestRefreshToken(t *testing.T) {
+	clearTable()
+	addUsers(1)
+	ensureAuthorizedUserExists()
+	//token := getTestJWT()
+
 }
 
 const tableCreationQuery = `
@@ -225,9 +235,9 @@ const userInsertionQuery = `
 `
 
 type Temp_jwt struct {
-	UserId      int
-	AccessToken string
-	Expires     time.Time
+	UserId       int
+	AccessToken  string
+	RefreshToken string
 }
 
 func ensureTableExists() {
@@ -276,14 +286,12 @@ func ensureAuthorizedUserExists() {
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
-	resp, _ := client.Do(req)
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalf("Algo inesperado paso %s", err)
+	}
 
 	resp.Body.Close()
-	//fmt.Println("response Status:", resp.Status)
-	//fmt.Println("response Headers:", resp.Header)
-	//body, _ := ioutil.ReadAll(resp.Body)
-	//fmt.Println("response Body:", string(body))
-
 }
 
 func clearTable() {

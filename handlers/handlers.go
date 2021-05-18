@@ -37,7 +37,7 @@ func (a *App) Initialize(user, password, dbname string) {
 func (a *App) initializeRoutes() {
 	// auth
 	a.Router.HandleFunc("/api/token", auth).Methods("POST")
-	//a.Router.HandleFunc("/api/refresh", refresh).Methods("GET")
+	a.Router.HandleFunc("/api/refresh", refresh).Methods("GET")
 
 	// users
 	a.Router.Handle("/users", isAuthorized(getUsersHandler)).Methods("GET")

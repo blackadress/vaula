@@ -6,24 +6,77 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
 )
 
 func main() {
-	token := getTestJWT()
-	println("this is the token obtained", token)
-	getUsersT(token)
 	//ensureUserExists()
+	//token := getTestJWT()
+	//println("this is the token obtained", token)
+	//getUsersT(token)
 
-	//headerEg := "Bearer woeirji389#$!@asd"
-	//re := regexp.MustCompile(`Bearer\b* `)
-	//fmt.Printf("%q\n", re.Split(headerEg, 2))
+	fullToken := getFullJWT()
+	fmt.Printf("%#v\n", fullToken)
+	println("*****************************************************")
+
+	newPair := refreshToken(fullToken.AccessToken)
+	fmt.Printf("%#v\n", newPair)
+	println("*****************************************************")
+
+	newPair = refreshToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjExMCwiZXhwIjoxNjIxMzc1ODA1fQ.Bx5rWZpiQUkeEvPWaBYu2TNOic7g3DlgNB6Dj-MRe6o")
+	fmt.Printf("%#v\n", newPair)
+	println("*****************************************************")
+
 }
 
 type Temp_jwt struct {
-	UserId      int
-	AccessToken string
-	Expires     time.Time
+	UserId       int
+	AccessToken  string
+	RefreshToken string
+}
+
+func refreshToken(refreshToken string) Temp_jwt {
+	url := "http://localhost:8000/api/refresh"
+	req, _ := http.NewRequest(
+		"GET",
+		url,
+		nil)
+	req.Header.Set("Refresh", refreshToken)
+
+	client := &http.Client{}
+	resp, _ := client.Do(req)
+
+	var jwt Temp_jwt
+	body, _ := ioutil.ReadAll(resp.Body)
+	println("refresh token raw", string(body))
+	println("--------------------------------------")
+	json.Unmarshal(body, &jwt)
+
+	return jwt
+}
+
+func getFullJWT() Temp_jwt {
+	userJson, err := json.Marshal(map[string]string{
+		"username": "prueba",
+		"password": "prueba",
+	})
+	if err != nil {
+		println(err)
+	}
+
+	req, _ := http.NewRequest(
+		"POST",
+		"http://localhost:8000/api/token",
+		bytes.NewBuffer(userJson))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, _ := client.Do(req)
+
+	var jwt Temp_jwt
+	body, _ := ioutil.ReadAll(resp.Body)
+	json.Unmarshal(body, &jwt)
+
+	return jwt
 }
 
 func getUsersT(tkn string) {
@@ -41,8 +94,8 @@ func getUsersT(tkn string) {
 	defer resp.Body.Close()
 	fmt.Println("response Status:", resp.Status)
 	fmt.Println("response Headers:", resp.Header)
-	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("response Body:", string(body))
+	//body, _ := ioutil.ReadAll(resp.Body)
+	//fmt.Println("response Body:", string(body))
 }
 
 func getTestJWT() string {

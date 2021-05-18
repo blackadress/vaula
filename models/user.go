@@ -2,10 +2,8 @@ package models
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
-	"regexp"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -36,6 +34,16 @@ func (u *User) GetUserByUsername(db *pgxpool.Pool) error {
 		WHERE username=$1`,
 		u.Username,
 	).Scan(&u.ID, &u.Password, &u.Email)
+}
+
+func (u *User) GetUserById(db *pgxpool.Pool) error {
+	println(u.ID)
+	return db.QueryRow(context.Background(),
+		`SELECT id, email
+		FROM users
+		WHERE id=$1`,
+		u.ID,
+	).Scan(&u.ID, &u.Email)
 }
 
 func (u *User) UpdateUser(db *pgxpool.Pool) error {
@@ -104,66 +112,65 @@ type Claims struct {
 }
 
 type JWToken struct {
-	UserId      int       `json:"userId"`
-	AccessToken string    `json:"accessToken"`
-	Expires     time.Time `json:"expires"`
+	UserId       int    `json:"userId"`
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
 }
 
 func (u *User) GetJWTForUser() (JWToken, error) {
 	var token JWToken
-	expirationTime := time.Now().Add(time.Minute * 30)
+	//expirationTime := time.Now().Add(time.Minute * 30)
+	expirationTime := time.Now().Add(time.Second * 3)
 
 	validToken, err := generateJWT(expirationTime, u.ID)
 	if err != nil {
-		log.Printf("Error inesperado en la capa modelo de jwt")
+		log.Printf("Error inesperado generando access token")
+		return token, err
+	}
+
+	expirationTime = time.Now().Add(time.Hour * 24 * 7)
+	refreshToken, err := generateJWT(expirationTime, u.ID)
+	if err != nil {
+		log.Printf("Error inesperado generando refresh token")
 		return token, err
 	}
 
 	token = JWToken{
-		UserId:      u.ID,
-		AccessToken: validToken,
-		Expires:     expirationTime,
+		UserId:       u.ID,
+		AccessToken:  validToken,
+		RefreshToken: refreshToken,
 	}
 	return token, err
 }
 
-func ValidateToken(bearerToken string) (bool, error) {
+func ValidateToken(tkn string) (bool, Claims, error) {
 	secretKey := []byte(os.Getenv("SECRET_KEY"))
-
-	parseToken := func(tkn string) (string, error) {
-		re := regexp.MustCompile(`Bearer\s(?P<token>.*)`)
-		captured := re.FindStringSubmatch(tkn)
-		if captured == nil {
-			return "", fmt.Errorf("Wrong Authorization header format")
-		}
-		parsedTkn := captured[1]
-		return parsedTkn, nil
-	}
-
-	parsedTkn, err := parseToken(bearerToken)
-	if err != nil {
-		return false, err
-	}
 
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(
-		parsedTkn,
+		tkn,
 		claims,
 		func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				err_msg := "There was an error while validating token"
-				log.Printf("%s", err_msg)
-				return nil, fmt.Errorf("%s", err_msg)
+				log.Printf("Unexpected signing method: %v", token.Header["alg"])
+				return nil, jwt.ErrSignatureInvalid
 			}
 			return secretKey, nil
 		})
+
 	if err != nil {
-		return false, err
+		return token.Valid, *claims, err
 	}
 
-	return token.Valid, err
+	return token.Valid, *claims, err
 }
 
+//func ValidateRefreshToken()
+
+// mas tarde se puede generar el access token y refresh separados
+// para eso en lugar de userId, podria aceptar un objeto Claims
+// y revisar si tiene otros campos fuera de userId para generar
+// el token
 func generateJWT(expirationTime time.Time, userId int) (string, error) {
 	claims := &Claims{
 		UserId: userId,
