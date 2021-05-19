@@ -11,8 +11,8 @@ import (
 
 	"github.com/blackadress/vaula/globals"
 	"github.com/blackadress/vaula/models"
-	"github.com/dgrijalva/jwt-go"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
 	"golang.org/x/crypto/bcrypt"
@@ -126,50 +126,6 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func refresh(w http.ResponseWriter, r *http.Request) {
-	if r.Header["Refresh"] == nil {
-		respondWithError(w, http.StatusBadRequest, "")
-		return
-	}
-
-	isTokenValid, claims, err := models.ValidateToken(r.Header["Refresh"][0])
-
-	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			respondWithError(w, http.StatusUnauthorized, err.Error())
-			return
-		}
-		respondWithError(w, http.StatusBadRequest, "Token Expired")
-		return
-	}
-
-	if !isTokenValid {
-		respondWithError(w, http.StatusUnauthorized, "Invalid token")
-		return
-	}
-
-	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
-		respondWithError(w, http.StatusUnauthorized, "Demasiado pronto para pedir nuevo token")
-		return
-	}
-	// check if userID is in DB
-	u := models.User{ID: claims.UserId}
-	if err := u.GetUserById(globals.DB); err != nil {
-		respondWithError(w, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	newTknPair, err := u.GetJWTForUser()
-	if err != nil {
-		log.Printf("%v", err.Error())
-		respondWithError(w, http.StatusInternalServerError, "Error generando token")
-		return
-	}
-
-	respondWithJSON(w, http.StatusOK, newTknPair)
-	return
-}
-
 func auth(w http.ResponseWriter, r *http.Request) {
 	// attackers shouldn't know if a username exists on the DB
 	// so we should roughly take the same amount of time
@@ -220,10 +176,48 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func pass(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		endpoint(w, r)
-	})
+func refresh(w http.ResponseWriter, r *http.Request) {
+	if r.Header["Refresh"] == nil {
+		respondWithError(w, http.StatusBadRequest, "")
+		return
+	}
+
+	isTokenValid, claims, err := models.ValidateToken(r.Header["Refresh"][0])
+
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			respondWithError(w, http.StatusUnauthorized, err.Error())
+			return
+		}
+		respondWithError(w, http.StatusBadRequest, "Token Expired")
+		return
+	}
+
+	if !isTokenValid {
+		respondWithError(w, http.StatusUnauthorized, "Invalid token")
+		return
+	}
+
+	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
+		respondWithError(w, http.StatusUnauthorized, "Demasiado pronto para pedir nuevo token")
+		return
+	}
+	// check if userID is in DB
+	u := models.User{ID: claims.UserId}
+	if err := u.GetUserNoPwd(globals.DB); err != nil {
+		respondWithError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	newTknPair, err := u.GetJWTForUser()
+	if err != nil {
+		log.Printf("%v", err.Error())
+		respondWithError(w, http.StatusInternalServerError, "Error generando token")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, newTknPair)
+	return
 }
 
 func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
@@ -264,6 +258,12 @@ func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handle
 			log.Printf("POST %s code: %d", r.RequestURI, http.StatusUnauthorized)
 			respondWithError(w, http.StatusUnauthorized, "Unauthorized")
 		}
+	})
+}
+
+func pass(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		endpoint(w, r)
 	})
 }
 

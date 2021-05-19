@@ -6,8 +6,6 @@ import (
 	"os"
 
 	"github.com/blackadress/vaula/handlers"
-	_ "github.com/blackadress/vaula/models"
-
 	"github.com/joho/godotenv"
 )
 

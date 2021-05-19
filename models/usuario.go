@@ -11,10 +11,13 @@ import (
 )
 
 type User struct {
-	ID       int    `json:"id"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Email    string `json:"email"`
+	ID          int       `json:"id"`
+	Username    string    `json:"username"`
+	Password    string    `json:"password"`
+	Email       string    `json:"email"`
+	Activo      bool      `json:"activo"`
+	FechaInicio time.Time `json:"fechaInicio"`
+	FechaFinal  time.Time `json:"fechaFinal"`
 }
 
 func (u *User) GetUser(db *pgxpool.Pool) error {
@@ -36,8 +39,7 @@ func (u *User) GetUserByUsername(db *pgxpool.Pool) error {
 	).Scan(&u.ID, &u.Password, &u.Email)
 }
 
-func (u *User) GetUserById(db *pgxpool.Pool) error {
-	println(u.ID)
+func (u *User) GetUserNoPwd(db *pgxpool.Pool) error {
 	return db.QueryRow(context.Background(),
 		`SELECT id, email
 		FROM users
@@ -164,8 +166,6 @@ func ValidateToken(tkn string) (bool, Claims, error) {
 
 	return token.Valid, *claims, err
 }
-
-//func ValidateRefreshToken()
 
 // mas tarde se puede generar el access token y refresh separados
 // para eso en lugar de userId, podria aceptar un objeto Claims
