@@ -33,6 +33,8 @@ func (a *Alternativa) GetAlternativa(db *pgxpool.Pool) error {
 	return db.QueryRow(
 		context.Background(),
 		`SELECT valor, correcto, activo, createdAt, updatedAt
+		FROM alternativas
+		WHERE id=$1
 		`,
 		a.ID,
 	).Scan(&a.Valor, &a.Correcto, &a.Activo, &a.CreatedAt, &a.UpdatedAt)
@@ -54,7 +56,7 @@ func (a *Alternativa) GetAlternativas(db *pgxpool.Pool) ([]Alternativa, error) {
 		err := rows.Scan(
 			&a.ID, &a.Valor, &a.Correcto, &a.Activo, &a.CreatedAt, &a.UpdatedAt)
 		if err != nil {
-			log.Println("Las filas obtenidas de la BD no satisfacen la función 'Scan'")
+			log.Println("Las filas obtenidas de la BD para Alternativa, no satisfacen a 'Scan'")
 			return nil, err
 		}
 		alternativas = append(alternativas, a)
