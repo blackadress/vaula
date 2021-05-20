@@ -28,8 +28,7 @@ func (c *Curso) CreateCurso(db *pgxpool.Pool) error {
 		VALUES($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id`,
 		c.Siglas, c.Nombre, c.Silabo, c.Semestre,
-		c.Activo, now, now,
-	).Scan(&c.ID)
+		c.Activo, now, now).Scan(&c.ID)
 }
 
 func (c *Curso) GetCurso(db *pgxpool.Pool) error {
@@ -38,8 +37,9 @@ func (c *Curso) GetCurso(db *pgxpool.Pool) error {
 		`SELECT siglas, nombre, silabo, semestre, activo, createdAt, updatedAt
 		FROM cursos
 		WHERE id=$1`,
-		c.ID,
-	).Scan(&c.Siglas, &c.Nombre, &c.Silabo, &c.Semestre, &c.Activo, &c.CreatedAt, &c.UpdatedAt)
+		c.ID).Scan(
+		&c.Siglas, &c.Nombre, &c.Silabo, &c.Semestre,
+		&c.Activo, &c.CreatedAt, &c.UpdatedAt)
 }
 
 func getCursos(db *pgxpool.Pool) ([]Curso, error) {
@@ -76,8 +76,7 @@ func (c *Curso) UpdateCurso(db *pgxpool.Pool) error {
 		`UPDATE cursos SET siglas=$1, nombre=$2, silabo=$3, 
 		semestre=$4, activo=$5, updatedA=$6
 		WHERE id=$7`,
-		c.Siglas, c.Nombre, c.Silabo, c.Semestre, c.Activo, updTime, c.ID,
-	)
+		c.Siglas, c.Nombre, c.Silabo, c.Semestre, c.Activo, updTime, c.ID)
 
 	return err
 }
@@ -86,7 +85,6 @@ func (c *Curso) DeleteCurso(db *pgxpool.Pool) error {
 	_, err := db.Exec(
 		context.Background(),
 		`DELETE FROM cursos WHERE id=$1`,
-		c.ID,
-	)
+		c.ID)
 	return err
 }

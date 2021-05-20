@@ -71,8 +71,7 @@ func (a *Alternativa) UpdateAlternativa(db *pgxpool.Pool) error {
 		context.Background(),
 		`UPDATE alternativas SET valor=$1, correcto=$2, updatedAt=$3
 		WHERE id=$4`,
-		a.Valor, a.Correcto, updTime, a.ID,
-	)
+		a.Valor, a.Correcto, updTime, a.ID)
 
 	return err
 }
@@ -81,8 +80,7 @@ func (a *Alternativa) DeleteAlternativa(db *pgxpool.Pool) error {
 	_, err := db.Exec(
 		context.Background(),
 		`DELETE FROM alternativas WHERE id=$1`,
-		a.ID,
-	)
+		a.ID)
 
 	return err
 }

@@ -8,25 +8,25 @@ import (
 	"net/http"
 )
 
-func main() {
-	//ensureUserExists()
-	//token := getTestJWT()
-	//println("this is the token obtained", token)
-	//getUsersT(token)
+// func main() {
+// 	//ensureUserExists()
+// 	//token := getTestJWT()
+// 	//println("this is the token obtained", token)
+// 	//getUsersT(token)
 
-	fullToken := getFullJWT()
-	fmt.Printf("%#v\n", fullToken)
-	println("*****************************************************")
+// 	fullToken := getFullJWT()
+// 	fmt.Printf("%#v\n", fullToken)
+// 	println("*****************************************************")
 
-	newPair := refreshToken(fullToken.AccessToken)
-	fmt.Printf("%#v\n", newPair)
-	println("*****************************************************")
+// 	newPair := refreshToken(fullToken.AccessToken)
+// 	fmt.Printf("%#v\n", newPair)
+// 	println("*****************************************************")
 
-	newPair = refreshToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjExMCwiZXhwIjoxNjIxMzc1ODA1fQ.Bx5rWZpiQUkeEvPWaBYu2TNOic7g3DlgNB6Dj-MRe6o")
-	fmt.Printf("%#v\n", newPair)
-	println("*****************************************************")
+// 	newPair = refreshToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjExMCwiZXhwIjoxNjIxMzc1ODA1fQ.Bx5rWZpiQUkeEvPWaBYu2TNOic7g3DlgNB6Dj-MRe6o")
+// 	fmt.Printf("%#v\n", newPair)
+// 	println("*****************************************************")
 
-}
+// }
 
 type Temp_jwt struct {
 	UserId       int
@@ -89,7 +89,10 @@ func getUsersT(tkn string) {
 	req.Header.Set("Authorization", bearerToken)
 
 	client := &http.Client{}
-	resp, _ := client.Do(req)
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
 
 	defer resp.Body.Close()
 	fmt.Println("response Status:", resp.Status)
@@ -136,7 +139,10 @@ func ensureUserExists() {
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
-	resp, _ := client.Do(req)
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
 
 	defer resp.Body.Close()
 	fmt.Println("response Status:", resp.Status)
