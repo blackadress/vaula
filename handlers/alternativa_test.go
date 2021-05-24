@@ -64,7 +64,7 @@ func TestCreateAlternativa(t *testing.T) {
 	var jsonStr = []byte(`
 	{
 		"valor": "val_alt_test",
-		"correcto": true,
+		"correcto": true
 	}`)
 
 	token := getTestJWT()
@@ -188,7 +188,7 @@ const tableAlternativaCreationQuery = `
 CREATE TABLE IF NOT EXISTS alternativas
 	(
 		id SERIAL,
-		valor TEXT NOT NULL,
+		valor VARCHAR(50) NOT NULL,
 		correcto BOOLEAN NOT NULL,
 
 		activo BOOLEAN NOT NULL,

@@ -15,6 +15,7 @@ import (
 
 func TestEmptyAlumnoTable(t *testing.T) {
 	clearTableAlumno()
+	clearTableUsuario()
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
@@ -34,6 +35,7 @@ func TestEmptyAlumnoTable(t *testing.T) {
 
 func TestGetNonExistentAlumno(t *testing.T) {
 	clearTableAlumno()
+	clearTableUsuario()
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
@@ -55,16 +57,23 @@ func TestGetNonExistentAlumno(t *testing.T) {
 }
 
 func TestCreateAlumno(t *testing.T) {
+	clearTableAlumno()
 	clearTableUsuario()
+	ensureAuthorizedUserExists()
+
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
 	var jsonStr = []byte(`
 	{
 		"nombres": "nom_al_test",
 		"apellidos": "ap_al_test",
-		"codigo": "user_test@test.ts"
+		"codigo": "12345678",
+		"usuarioId": 1
 	}`)
 	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", token_str)
 
 	response := executeRequest(req, a)
 	checkResponseCode(t, http.StatusCreated, response.Code)
@@ -72,16 +81,20 @@ func TestCreateAlumno(t *testing.T) {
 	var m map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	if m["username"] != "user_test" {
-		t.Errorf("Expected user username to be 'user_test'. Got '%v'", m["username"])
+	if m["nombres"] != "nom_al_test" {
+		t.Errorf("Expected user nombres to be 'nom_al_test'. Got '%v'", m["nombres"])
 	}
 
-	if m["password"] == "1234" {
-		t.Errorf("Expected password to have been hashed, it is still '%v'", m["password"])
+	if m["apellidos"] == "ap_al_test" {
+		t.Errorf("Expected apellidos to be 'ap_al_test'. Got '%v'", m["apellidos"])
 	}
 
-	if m["email"] != "user_test@test.ts" {
-		t.Errorf("Expected user email to be 'user_test@test.ts'. Got '%v'", m["email"])
+	if m["codigo"] != "12345678" {
+		t.Errorf("Expected user codigo to be '12345678'. Got '%v'", m["codigo"])
+	}
+
+	if m["usuarioId"] != 1.0 {
+		t.Errorf("Expected user codigo to be 'user_test@test.ts'. Got '%v'", m["codigo"])
 	}
 
 	if m["id"] != 1.0 {
@@ -107,6 +120,7 @@ func TestGetAlumno(t *testing.T) {
 func TestUpdateAlumno(t *testing.T) {
 	clearTableUsuario()
 	addAlumnos(1)
+	addUsers(2)
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
@@ -119,9 +133,11 @@ func TestUpdateAlumno(t *testing.T) {
 	json.Unmarshal(response.Body.Bytes(), &originalAlumno)
 
 	var jsonStr = []byte(`{
-		"username": "user_test_updated",
-		"password": "1234_updated",
-		"email": "user_test_updated@test.ts"}`)
+		"nombres": "nom_al_test_updated",
+		"apellidos": "ap_al_test_updated",
+		"codigo": "11111111",
+		"usuarioId": 2,
+		"activo": false}`)
 
 	req, _ = http.NewRequest("PUT", "/users/1", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
@@ -137,30 +153,48 @@ func TestUpdateAlumno(t *testing.T) {
 		t.Errorf("Expected the id to remain the same (%v). Got %v", originalAlumno["id"], m["id"])
 	}
 
-	if m["username"] == originalAlumno["username"] {
+	if m["nombres"] == originalAlumno["nombres"] {
 		t.Errorf(
-			"Expected the username to change from '%v' to '%v'. Got '%v'",
-			originalAlumno["username"],
-			m["username"],
-			originalAlumno["username"],
+			"Expected the nombres to change from '%v' to '%v'. Got '%v'",
+			originalAlumno["nombres"],
+			m["nombres"],
+			originalAlumno["nombres"],
 		)
 	}
 
-	if m["password"] == originalAlumno["password"] {
+	if m["apellidos"] == originalAlumno["apellidos"] {
 		t.Errorf(
-			"Expected the password to change from '%v' to '%v'. Got '%v'",
-			originalAlumno["password"],
-			m["password"],
-			originalAlumno["password"],
+			"Expected the apellidos to change from '%v' to '%v'. Got '%v'",
+			originalAlumno["apellidos"],
+			m["apellidos"],
+			originalAlumno["apellidos"],
 		)
 	}
 
-	if m["email"] == originalAlumno["email"] {
+	if m["codigo"] == originalAlumno["codigo"] {
 		t.Errorf(
-			"Expected the email to change from '%v', to '%v'. Got '%v'",
-			originalAlumno["email"],
-			m["email"],
-			originalAlumno["email"],
+			"Expected the codigo to change from '%v', to '%v'. Got '%v'",
+			originalAlumno["codigo"],
+			m["codigo"],
+			originalAlumno["codigo"],
+		)
+	}
+
+	if m["usuarioId"] == originalAlumno["usuarioId"] {
+		t.Errorf(
+			"Expected the usuarioId to change from '%v', to '%v'. Got '%v'",
+			originalAlumno["usuarioId"],
+			m["usuarioId"],
+			originalAlumno["usuarioId"],
+		)
+	}
+
+	if m["activo"] == originalAlumno["activo"] {
+		t.Errorf(
+			"Expected the activo to change from '%v', to '%v'. Got '%v'",
+			originalAlumno["activo"],
+			m["activo"],
+			originalAlumno["activo"],
 		)
 	}
 }
@@ -187,8 +221,10 @@ const tableAlumnoCreationQuery = `
 CREATE TABLE IF NOT EXISTS alumnos
 	(
 		id SERIAL,
-		valor TEXT NOT NULL,
-		correcto BOOLEAN NOT NULL,
+		apellidos VARCHAR(200) NOT NULL,
+		nombres VARCHAR(200) NOT NULL,
+		codigo CHAR(8) NOT NULL,
+		usuarioId INT REFERENCES usuario(id)
 
 		activo BOOLEAN NOT NULL,
 		createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),

@@ -25,17 +25,18 @@ func (a *Alumno) CreateAlumno(db *pgxpool.Pool) error {
 	now := time.Now()
 	return db.QueryRow(
 		context.Background(),
-		`INSERT INTO alumnos(nombres, apellidos, codigo, usuarioId, createdAt, updatedAt)
-		VALUES($1, $2, $3, $4, $5, $6)
+		`INSERT INTO alumnos(nombres, apellidos, codigo, usuarioId, activo, createdAt, updatedAt)
+		VALUES($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id`,
-		a.Nombres, a.Apellidos, a.Codigo, a.UsuarioId, now, now,
+		a.Nombres, a.Apellidos, a.Codigo, a.UsuarioId, true, now, now,
 	).Scan(&a.ID)
 }
 
 func (a *Alumno) GetAlumno(db *pgxpool.Pool) error {
 	return db.QueryRow(
 		context.Background(),
-		`SELECT nombres, apellidos, codigo, usuarioId, createdAt, updatedAt
+		`SELECT nombres, apellidos, codigo, activo, 
+		usuarioId, createdAt, updatedAt
 		FROM alumnos
 		WHERE id=$1`,
 		a.ID,
@@ -45,7 +46,8 @@ func (a *Alumno) GetAlumno(db *pgxpool.Pool) error {
 func (a *Alumno) GetAlumnos(db *pgxpool.Pool) ([]Alumno, error) {
 	rows, err := db.Query(
 		context.Background(),
-		`SELECT nombres, apellidos, codigo, usuarioId, createdAt, updatedAt
+		`SELECT nombres, apellidos, codigo, usuarioId, 
+		activo, createdAt, updatedAt
 		FROM alumnos`)
 
 	if err != nil {
@@ -59,7 +61,7 @@ func (a *Alumno) GetAlumnos(db *pgxpool.Pool) ([]Alumno, error) {
 		var a Alumno
 		err := rows.Scan(
 			&a.ID, &a.Nombres, &a.Apellidos, &a.Codigo,
-			&a.UsuarioId, &a.CreatedAt, &a.UpdatedAt)
+			&a.UsuarioId, &a.Activo, &a.CreatedAt, &a.UpdatedAt)
 		if err != nil {
 			log.Println("Las filas obtenidas de la BD para Alumno, no satisfacen a 'Scan'")
 			return nil, err
@@ -69,13 +71,15 @@ func (a *Alumno) GetAlumnos(db *pgxpool.Pool) ([]Alumno, error) {
 	return alumnos, nil
 }
 
-func (a *Alumno) UpdateAlternativa(db *pgxpool.Pool) error {
+func (a *Alumno) UpdateAlumno(db *pgxpool.Pool) error {
 	now := time.Now()
 	_, err := db.Exec(
 		context.Background(),
-		`UPDATE alumnos SET nombres=$1, apellidos=$2, codigo=$3, usuarioId=$4, updatedAt=$5
-		WHERE id=$6`,
-		a.Nombres, a.Apellidos, a.Codigo, a.UsuarioId, now, a.ID,
+		`UPDATE alumnos SET nombres=$1, apellidos=$2, codigo=$3,
+		usuarioId=$4, activo=$5, updatedAt=$6
+		WHERE id=$7`,
+		a.Nombres, a.Apellidos, a.Codigo,
+		a.Activo, a.UsuarioId, now, a.ID,
 	)
 
 	return err
