@@ -121,8 +121,9 @@ type JWToken struct {
 
 func (u *User) GetJWTForUser() (JWToken, error) {
 	var token JWToken
-	//expirationTime := time.Now().Add(time.Minute * 30)
-	expirationTime := time.Now().Add(time.Second * 3)
+	expirationTime := time.Now().Add(time.Minute * 30)
+	// TODO test refresh time token
+	// expirationTime := time.Now().Add(time.Second * 3)
 
 	validToken, err := generateJWT(expirationTime, u.ID)
 	if err != nil {

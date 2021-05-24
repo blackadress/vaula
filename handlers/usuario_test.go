@@ -11,38 +11,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"testing"
 
 	"github.com/blackadress/vaula/globals"
-	"github.com/joho/godotenv"
 )
 
-var a App
-var BASE_URL string
-
-func TestMain(m *testing.M) {
-
-	if err := godotenv.Load("../.env"); err != nil {
-		log.Print("TEST: no '.env' found")
-	}
-	BASE_URL = os.Getenv("URL")
-
-	a.Initialize(
-		os.Getenv("APP_DB_USERNAME"),
-		os.Getenv("APP_DB_PASSWORD"),
-		os.Getenv("APP_DB_NAME"),
-	)
-
-	ensureTableExists()
-	code := m.Run()
-	clearTable()
-	os.Exit(code)
-}
-
-func TestEmptyTable(t *testing.T) {
-	clearTable()
+func TestEmptyUsuarioTable(t *testing.T) {
+	clearTableUsuario()
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
@@ -60,8 +36,8 @@ func TestEmptyTable(t *testing.T) {
 	}
 }
 
-func TestGetNonExistentUser(t *testing.T) {
-	clearTable()
+func TestGetNonExistentUsuario(t *testing.T) {
+	clearTableUsuario()
 	ensureAuthorizedUserExists()
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
@@ -82,7 +58,7 @@ func TestGetNonExistentUser(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	clearTable()
+	clearTableUsuario()
 
 	var jsonStr = []byte(`
 	{
@@ -117,7 +93,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	clearTable()
+	clearTableUsuario()
 	addUsers(1)
 	ensureAuthorizedUserExists()
 
@@ -131,8 +107,8 @@ func TestGetUser(t *testing.T) {
 	checkResponseCode(t, http.StatusOK, response.Code)
 }
 
-func TestUpdateProduct(t *testing.T) {
-	clearTable()
+func TestUpdateUser(t *testing.T) {
+	clearTableUsuario()
 	addUsers(1)
 	ensureAuthorizedUserExists()
 
@@ -193,7 +169,7 @@ func TestUpdateProduct(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	clearTable()
+	clearTableUsuario()
 	addUsers(1)
 	ensureAuthorizedUserExists()
 	token := getTestJWT()
@@ -211,7 +187,7 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestRefreshToken(t *testing.T) {
-	clearTable()
+	clearTableUsuario()
 	addUsers(1)
 	ensureAuthorizedUserExists()
 	//token := getTestJWT()
@@ -240,10 +216,15 @@ type Temp_jwt struct {
 	RefreshToken string
 }
 
-func ensureTableExists() {
+func ensureTableUsuarioExists() {
 	if _, err := globals.DB.Exec(context.Background(), tableCreationQuery); err != nil {
 		log.Printf("TEST: error creando tabla de usuarios: %s", err)
 	}
+}
+
+func clearTableUsuario() {
+	globals.DB.Exec(context.Background(), "DELETE FROM users")
+	globals.DB.Exec(context.Background(), "ALTER SEQUENCE users_id_seq RESTART WITH 1")
 }
 
 func getTestJWT() Temp_jwt {
@@ -292,11 +273,6 @@ func ensureAuthorizedUserExists() {
 	}
 
 	resp.Body.Close()
-}
-
-func clearTable() {
-	globals.DB.Exec(context.Background(), "DELETE FROM users")
-	globals.DB.Exec(context.Background(), "ALTER SEQUENCE users_id_seq RESTART WITH 1")
 }
 
 func addUsers(count int) {
