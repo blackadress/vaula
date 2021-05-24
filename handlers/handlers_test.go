@@ -1,7 +1,12 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"testing"
 
@@ -33,4 +38,58 @@ func TestMain(m *testing.M) {
 	clearTableUsuario()
 	clearTableAlternativa()
 	os.Exit(code)
+}
+
+type Temp_jwt struct {
+	UserId       int
+	AccessToken  string
+	RefreshToken string
+}
+
+func getTestJWT() Temp_jwt {
+	userJson, err := json.Marshal(map[string]string{
+		"username": "prueba", "password": "prueba"})
+	if err != nil {
+		log.Fatal(err)
+	}
+	url := fmt.Sprintf("%s%s", BASE_URL, "/api/token")
+
+	resp, err := http.Post(url, "application/json",
+		bytes.NewBuffer(userJson))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	var jwt Temp_jwt
+	res, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	json.Unmarshal(res, &jwt)
+
+	return jwt
+	//checkResponseCode(t, http.StatusOK, response.Code)
+
+}
+
+func ensureAuthorizedUserExists() {
+	var userJson = []byte(`
+	{
+		"username": "prueba",
+		"password": "prueba",
+		"email": "prueba@pru.eba"
+	}`)
+	req, _ := http.NewRequest("POST",
+		"http://localhost:8000/users",
+		bytes.NewBuffer(userJson))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalf("Algo inesperado paso %s", err)
+	}
+
+	resp.Body.Close()
 }

@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,6 +15,7 @@ import (
 
 func TestEmptyAlternativaTable(t *testing.T) {
 	clearTableAlternativa()
+	clearTableUsuario()
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
@@ -28,6 +31,157 @@ func TestEmptyAlternativaTable(t *testing.T) {
 	if body != "" {
 		t.Errorf("Se esperaba un array vacio. Se obtuvo %#v", body)
 	}
+}
+
+func TestGetNonExistentAlternativa(t *testing.T) {
+	clearTableAlternativa()
+	clearTableUsuario()
+	ensureAuthorizedUserExists()
+
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+
+	req, _ := http.NewRequest("GET", "/alternativas/11", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
+
+	checkResponseCode(t, http.StatusNotFound, response.Code)
+
+	var m map[string]string
+	json.Unmarshal(response.Body.Bytes(), &m)
+	if m["error"] != "Alternativa not found" {
+		t.Errorf(
+			"Se espera que la key 'error' sea 'Alternativa not found'. Got '%s'",
+			m["error"])
+	}
+}
+
+func TestCreateAlternativa(t *testing.T) {
+	clearTableAlternativa()
+	clearTableUsuario()
+	ensureAuthorizedUserExists()
+
+	var jsonStr = []byte(`
+	{
+		"valor": "val_alt_test",
+		"correcto": true,
+	}`)
+
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+
+	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
+
+	response := executeRequest(req, a)
+	checkResponseCode(t, http.StatusCreated, response.Code)
+
+	var m map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+
+	if m["valor"] != "val_alt_test" {
+		t.Errorf("Expected user 'valor' to be 'val_alt_test'. Got '%v'", m["valor"])
+	}
+
+	if m["correcto"] {
+		t.Errorf("Expected 'correcto' to be 'true'. Got '%v'", m["correcto"])
+	}
+
+	if m["activo"] {
+		t.Errorf("Expected 'activo' to be 'true'. Got '%v'", m["password"])
+	}
+
+	if m["id"] != 1.0 {
+		t.Errorf("Expected alternativa ID to be '1'. Got '%v'", m["id"])
+	}
+}
+
+func TestGetAlternativa(t *testing.T) {
+	clearTableAlternativa()
+	addAlternativas(1)
+	ensureAuthorizedUserExists()
+
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+
+	req, _ := http.NewRequest("GET", "/alternativas/1", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+}
+
+func TestUpdateAlternativa(t *testing.T) {
+	clearTableAlternativa()
+	addAlternativas(1)
+	clearTableUsuario()
+	ensureAuthorizedUserExists()
+
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+
+	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
+	var originalAlternativa map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &originalAlternativa)
+
+	var jsonStr = []byte(`{
+		"valor": "alt_test_updated",
+		"correcto": false}`)
+
+	req, _ = http.NewRequest("PUT", "/users/1", bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", token_str)
+	response = executeRequest(req, a)
+
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	var m map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &m)
+
+	if m["id"] != originalAlternativa["id"] {
+		t.Errorf("Expected the id to remain the same (%v). Got %v", originalAlternativa["id"], m["id"])
+	}
+
+	if m["valor"] == originalAlternativa["valor"] {
+		t.Errorf(
+			"Expected the valor to change from '%v' to '%v'. Got '%v'",
+			originalAlternativa["valor"],
+			m["valor"],
+			originalAlternativa["valor"],
+		)
+	}
+
+	if m["correcto"] == originalAlternativa["correcto"] {
+		t.Errorf(
+			"Expected the correcto to change from '%v' to '%v'. Got '%v'",
+			originalAlternativa["correcto"],
+			m["correcto"],
+			originalAlternativa["correcto"],
+		)
+	}
+}
+
+func TestDeleteAlternativa(t *testing.T) {
+	clearTableAlternativa()
+	addAlternativas(1)
+	clearTableUsuario()
+	ensureAuthorizedUserExists()
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+
+	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
+	checkResponseCode(t, http.StatusOK, response.Code)
+
+	req, _ = http.NewRequest("DELETE", "/users/1", nil)
+	req.Header.Set("Authorization", token_str)
+	response = executeRequest(req, a)
+	checkResponseCode(t, http.StatusOK, response.Code)
 }
 
 const tableAlternativaCreationQuery = `

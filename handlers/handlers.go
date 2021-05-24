@@ -15,7 +15,7 @@ import (
 
 type App struct {
 	Router *mux.Router
-	DB     *pgxpool.Pool
+	// DB     *pgxpool.Pool
 }
 
 func (a *App) Initialize(user, password, dbname string) {

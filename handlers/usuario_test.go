@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -210,12 +209,6 @@ const userInsertionQuery = `
 	VALUES('prueba', 'prueba', 'prueba@mail.com')
 `
 
-type Temp_jwt struct {
-	UserId       int
-	AccessToken  string
-	RefreshToken string
-}
-
 func ensureTableUsuarioExists() {
 	if _, err := globals.DB.Exec(context.Background(), tableCreationQuery); err != nil {
 		log.Printf("TEST: error creando tabla de usuarios: %s", err)
@@ -225,54 +218,6 @@ func ensureTableUsuarioExists() {
 func clearTableUsuario() {
 	globals.DB.Exec(context.Background(), "DELETE FROM users")
 	globals.DB.Exec(context.Background(), "ALTER SEQUENCE users_id_seq RESTART WITH 1")
-}
-
-func getTestJWT() Temp_jwt {
-	userJson, err := json.Marshal(map[string]string{
-		"username": "prueba", "password": "prueba"})
-	if err != nil {
-		log.Fatal(err)
-	}
-	url := fmt.Sprintf("%s%s", BASE_URL, "/api/token")
-
-	resp, err := http.Post(url, "application/json",
-		bytes.NewBuffer(userJson))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	var jwt Temp_jwt
-	res, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	json.Unmarshal(res, &jwt)
-
-	return jwt
-	//checkResponseCode(t, http.StatusOK, response.Code)
-
-}
-
-func ensureAuthorizedUserExists() {
-	var userJson = []byte(`
-	{
-		"username": "prueba",
-		"password": "prueba",
-		"email": "prueba@pru.eba"
-	}`)
-	req, _ := http.NewRequest("POST",
-		"http://localhost:8000/users",
-		bytes.NewBuffer(userJson))
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatalf("Algo inesperado paso %s", err)
-	}
-
-	resp.Body.Close()
 }
 
 func addUsers(count int) {
