@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/blackadress/vaula/globals"
 )
@@ -34,12 +35,13 @@ func TestEmptyExamenTable(t *testing.T) {
 
 func TestGetNonExistentExamen(t *testing.T) {
 	clearTableExamen()
+	clearTableUsuario()
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/asdf/11", nil)
+	req, _ := http.NewRequest("GET", "/examenes/11", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 
@@ -55,15 +57,21 @@ func TestGetNonExistentExamen(t *testing.T) {
 }
 
 func TestCreateExamen(t *testing.T) {
+	clearTableExamen()
 	clearTableUsuario()
+	ensureAuthorizedUserExists()
+	clearTableCurso()
+	addCursos(1)
 
 	var jsonStr = []byte(`
 	{
-		"username": "user_test",
-		"password": "1234",
-		"email": "user_test@test.ts"
+		"nombre": "examen_test",
+		"fechaInicio": "2016-06-22 19:10:25-05",
+		"fechaFinal": "2016-06-24 19:10:25-05",
+		"cursoId": "1",
+		"activo": true
 	}`)
-	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(jsonStr))
+	req, _ := http.NewRequest("POST", "/examenes", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 
 	response := executeRequest(req, a)
@@ -72,20 +80,28 @@ func TestCreateExamen(t *testing.T) {
 	var m map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	if m["username"] != "user_test" {
-		t.Errorf("Expected user username to be 'user_test'. Got '%v'", m["username"])
+	if m["nombre"] != "examen_test" {
+		t.Errorf("Expected examen nombre to be 'examen_test'. Got '%v'", m["nombre"])
 	}
 
-	if m["password"] == "1234" {
-		t.Errorf("Expected password to have been hashed, it is still '%v'", m["password"])
+	if m["fechaInicio"] == "2016-06-22 19:10:25-05" {
+		t.Errorf("Expected examen fechaInicio to be '2016-06-22 19:10:25-05'. Got '%v'", m["fechaInicio"])
 	}
 
-	if m["email"] != "user_test@test.ts" {
-		t.Errorf("Expected user email to be 'user_test@test.ts'. Got '%v'", m["email"])
+	if m["fechaFinal"] != "2016-06-24 19:10:25-05" {
+		t.Errorf("Expected examen fechaFinal to be '2016-06-24 19:10:25-05'. Got '%v'", m["fechaFinal"])
+	}
+
+	if m["cursoId"] != 1.0 {
+		t.Errorf("Expected examen cursoId to be '1'. Got '%v'", m["cursoId"])
+	}
+
+	if m["activo"] {
+		t.Errorf("Expected examen activo to be 'true'. Got '%v'", m["activo"])
 	}
 
 	if m["id"] != 1.0 {
-		t.Errorf("Expected user ID to be '1'. Got '%v'", m["id"])
+		t.Errorf("Expected examen ID to be '1'. Got '%v'", m["id"])
 	}
 }
 
@@ -97,7 +113,7 @@ func TestGetExamen(t *testing.T) {
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/examenes/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 
@@ -107,23 +123,27 @@ func TestGetExamen(t *testing.T) {
 func TestUpdateExamen(t *testing.T) {
 	clearTableUsuario()
 	addExamenes(1)
+	addCursos(1)
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/examenes/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 	var originalExamen map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &originalExamen)
 
 	var jsonStr = []byte(`{
-		"username": "user_test_updated",
-		"password": "1234_updated",
-		"email": "user_test_updated@test.ts"}`)
+		"nombre": "examen_test_updated",
+		"fechaInicio": "2016-06-22 20:10:25-05",
+		"fechaFinal": "2016-06-22 20:10:25-05",
+		"cursoId": "2",
+		"activo": false
+	}`)
 
-	req, _ = http.NewRequest("PUT", "/users/1", bytes.NewBuffer(jsonStr))
+	req, _ = http.NewRequest("PUT", "/examenes/1", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", token_str)
 	response = executeRequest(req, a)
@@ -137,30 +157,48 @@ func TestUpdateExamen(t *testing.T) {
 		t.Errorf("Expected the id to remain the same (%v). Got %v", originalExamen["id"], m["id"])
 	}
 
-	if m["username"] == originalExamen["username"] {
+	if m["nombre"] == originalExamen["nombre"] {
 		t.Errorf(
-			"Expected the username to change from '%v' to '%v'. Got '%v'",
-			originalExamen["username"],
-			m["username"],
-			originalExamen["username"],
+			"Expected the nombre to change from '%v' to '%v'. Got '%v'",
+			originalExamen["nombre"],
+			m["nombre"],
+			originalExamen["nombre"],
 		)
 	}
 
-	if m["password"] == originalExamen["password"] {
+	if m["fechaInicio"] == originalExamen["fechaInicio"] {
 		t.Errorf(
-			"Expected the password to change from '%v' to '%v'. Got '%v'",
-			originalExamen["password"],
-			m["password"],
-			originalExamen["password"],
+			"Expected the fechaInicio to change from '%v' to '%v'. Got '%v'",
+			originalExamen["fechaInicio"],
+			m["fechaInicio"],
+			originalExamen["fechaInicio"],
 		)
 	}
 
-	if m["email"] == originalExamen["email"] {
+	if m["fechaFinal"] == originalExamen["fechaFinal"] {
 		t.Errorf(
-			"Expected the email to change from '%v', to '%v'. Got '%v'",
-			originalExamen["email"],
-			m["email"],
-			originalExamen["email"],
+			"Expected the fechaFinal to change from '%v', to '%v'. Got '%v'",
+			originalExamen["fechaFinal"],
+			m["fechaFinal"],
+			originalExamen["fechaFinal"],
+		)
+	}
+
+	if m["cursoId"] == originalExamen["cursoId"] {
+		t.Errorf(
+			"Expected the cursoId to change from '%v', to '%v'. Got '%v'",
+			originalExamen["cursoId"],
+			m["cursoId"],
+			originalExamen["cursoId"],
+		)
+	}
+
+	if m["activo"] == originalExamen["activo"] {
+		t.Errorf(
+			"Expected the activo to change from '%v', to '%v'. Got '%v'",
+			originalExamen["activo"],
+			m["activo"],
+			originalExamen["activo"],
 		)
 	}
 }
@@ -172,12 +210,12 @@ func TestDeleteExamen(t *testing.T) {
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/examenes/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	req, _ = http.NewRequest("DELETE", "/users/1", nil)
+	req, _ = http.NewRequest("DELETE", "/examenes/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response = executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
@@ -187,12 +225,14 @@ const tableExamenCreationQuery = `
 CREATE TABLE IF NOT EXISTS examenes
 	(
 		id SERIAL,
-		valor TEXT NOT NULL,
-		correcto BOOLEAN NOT NULL,
+		nombre VARCHAR(250) NOT NULL,
+		fechaInicio TIMESTAMPTZ NOT NULL,
+		fechaFinal TIMESTAMPTZ NOT NULL,
+		cursoId INT REFERENCES cursos(id),
 
 		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-		updatedAt TIMESTAMPTZ
+		createdAt TIMESTAMPTZ NOT NULL,
+		updatedAt TIMESTAMPTZ NOT NULL
 	)
 `
 
@@ -210,6 +250,10 @@ func clearTableExamen() {
 }
 
 func addExamenes(count int) {
+	clearTableCurso()
+	addCursos(count)
+	now := time.Now()
+
 	if count < 1 {
 		count = 1
 	}
@@ -217,10 +261,11 @@ func addExamenes(count int) {
 	for i := 0; i < count; i++ {
 		globals.DB.Exec(
 			context.Background(),
-			`INSERT INTO examenes(valor, correcto, activo)
-			VALUES($1, $2, $3)`,
-			"valor_"+strconv.Itoa(i),
-			i%2 == 1,
-			true)
+			`INSERT INTO examenes(nombre, fechaInicio, fechaFinal,
+			cursoId, activo, createdAt, updatedAt)
+			VALUES($1, $2, $3, $5, $6, $7)`,
+			"nombre_examen_"+strconv.Itoa(i),
+			"2016-06-22 19:10:25-05", "2016-06-22 19:10:25-05",
+			i+1, i%2 == 1, now, now)
 	}
 }

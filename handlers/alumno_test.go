@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/blackadress/vaula/globals"
 )
@@ -227,7 +228,7 @@ CREATE TABLE IF NOT EXISTS alumnos
 		usuarioId INT REFERENCES usuario(id)
 
 		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		createdAt TIMESTAMPTZ,
 		updatedAt TIMESTAMPTZ
 	)
 `
@@ -246,17 +247,23 @@ func clearTableAlumno() {
 }
 
 func addAlumnos(count int) {
+	clearTableUsuario()
+	addUsers(count)
 	if count < 1 {
 		count = 1
 	}
 
 	for i := 0; i < count; i++ {
+		now := time.Now()
+		codigo := fmt.Sprintf("%.8s", "00000000"+strconv.Itoa(i))
+
 		globals.DB.Exec(
 			context.Background(),
-			`INSERT INTO alumnos(valor, correcto, activo)
-			VALUES($1, $2, $3)`,
-			"valor_"+strconv.Itoa(i),
-			i%2 == 1,
-			true)
+			`INSERT INTO alumnos(apellidos, nombres, codigo,
+			usuarioId, activo, createdAt, updatedAt)
+			VALUES($1, $2, $3, $4, $5, $6, $7)`,
+			"ap_test_"+strconv.Itoa(i),
+			"nom_test_"+strconv.Itoa(i),
+			codigo, i+1, i%2 == 0, now, now)
 	}
 }

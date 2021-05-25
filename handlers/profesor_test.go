@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/blackadress/vaula/globals"
 )
@@ -39,7 +40,7 @@ func TestGetNonExistentProfesor(t *testing.T) {
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/asdf/11", nil)
+	req, _ := http.NewRequest("GET", "/profesores/11", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 
@@ -56,14 +57,17 @@ func TestGetNonExistentProfesor(t *testing.T) {
 
 func TestCreateProfesor(t *testing.T) {
 	clearTableUsuario()
+	ensureAuthorizedUserExists()
+	clearTableProfesor()
+	addUsers(1)
 
 	var jsonStr = []byte(`
 	{
-		"username": "user_test",
-		"password": "1234",
-		"email": "user_test@test.ts"
+		"nombres": "profesor_test",
+		"apellidos": "ap_profesor_test",
+		"usuarioId": 1
 	}`)
-	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(jsonStr))
+	req, _ := http.NewRequest("POST", "/profesores", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 
 	response := executeRequest(req, a)
@@ -72,32 +76,38 @@ func TestCreateProfesor(t *testing.T) {
 	var m map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	if m["username"] != "user_test" {
-		t.Errorf("Expected user username to be 'user_test'. Got '%v'", m["username"])
+	if m["nombres"] != "profesor_test" {
+		t.Errorf("Expected profesor nombres to be 'profesor_test'. Got '%v'", m["nombres"])
 	}
 
-	if m["password"] == "1234" {
-		t.Errorf("Expected password to have been hashed, it is still '%v'", m["password"])
+	if m["apellidos"] == "ap_profesor_test" {
+		t.Errorf("Expected profesor apellidos to be 'ap_profesor_test'. Got '%v'", m["apellidos"])
 	}
 
-	if m["email"] != "user_test@test.ts" {
-		t.Errorf("Expected user email to be 'user_test@test.ts'. Got '%v'", m["email"])
+	if m["usuarioId"] != 1.0 {
+		t.Errorf("Expected profesor usuarioId to be '1'. Got '%v'", m["usuarioId"])
+	}
+
+	if m["activo"] {
+		t.Errorf("Expected profesor usuarioId to be '1'. Got '%v'", m["usuarioId"])
 	}
 
 	if m["id"] != 1.0 {
-		t.Errorf("Expected user ID to be '1'. Got '%v'", m["id"])
+		t.Errorf("Expected profesor ID to be '1'. Got '%v'", m["id"])
 	}
 }
 
 func TestGetProfesor(t *testing.T) {
 	clearTableUsuario()
-	addProfesores(1)
 	ensureAuthorizedUserExists()
+
+	clearTableProfesor()
+	addProfesores(1)
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/profesores/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 
@@ -106,24 +116,28 @@ func TestGetProfesor(t *testing.T) {
 
 func TestUpdateProfesor(t *testing.T) {
 	clearTableUsuario()
-	addProfesores(1)
 	ensureAuthorizedUserExists()
+	addUsers(1)
+	clearTableProfesor()
+	addProfesores(1)
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/profesores/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 	var originalProfesor map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &originalProfesor)
 
 	var jsonStr = []byte(`{
-		"username": "user_test_updated",
-		"password": "1234_updated",
-		"email": "user_test_updated@test.ts"}`)
+		"nombres": "profesor_test_updated",
+		"apellidos": "ap_profesor_test_updated",
+		"usuarioId": 2,
+		"activo": false
+	}`)
 
-	req, _ = http.NewRequest("PUT", "/users/1", bytes.NewBuffer(jsonStr))
+	req, _ = http.NewRequest("PUT", "/profesores/1", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", token_str)
 	response = executeRequest(req, a)
@@ -137,47 +151,59 @@ func TestUpdateProfesor(t *testing.T) {
 		t.Errorf("Expected the id to remain the same (%v). Got %v", originalProfesor["id"], m["id"])
 	}
 
-	if m["username"] == originalProfesor["username"] {
+	if m["nombres"] == originalProfesor["nombres"] {
 		t.Errorf(
-			"Expected the username to change from '%v' to '%v'. Got '%v'",
-			originalProfesor["username"],
-			m["username"],
-			originalProfesor["username"],
+			"Expected the nombres to change from '%v' to '%v'. Got '%v'",
+			originalProfesor["nombres"],
+			m["nombres"],
+			originalProfesor["nombres"],
 		)
 	}
 
-	if m["password"] == originalProfesor["password"] {
+	if m["apellidos"] == originalProfesor["apellidos"] {
 		t.Errorf(
-			"Expected the password to change from '%v' to '%v'. Got '%v'",
-			originalProfesor["password"],
-			m["password"],
-			originalProfesor["password"],
+			"Expected the apellidos to change from '%v' to '%v'. Got '%v'",
+			originalProfesor["apellidos"],
+			m["apellidos"],
+			originalProfesor["apellidos"],
 		)
 	}
 
-	if m["email"] == originalProfesor["email"] {
+	if m["usuarioId"] == originalProfesor["usuarioId"] {
 		t.Errorf(
-			"Expected the email to change from '%v', to '%v'. Got '%v'",
-			originalProfesor["email"],
-			m["email"],
-			originalProfesor["email"],
+			"Expected the usuarioId to change from '%v', to '%v'. Got '%v'",
+			originalProfesor["usuarioId"],
+			m["usuarioId"],
+			originalProfesor["usuarioId"],
+		)
+	}
+
+	if m["activo"] == originalProfesor["activo"] {
+		t.Errorf(
+			"Expected the activo to change from '%v', to '%v'. Got '%v'",
+			originalProfesor["activo"],
+			m["activo"],
+			originalProfesor["activo"],
 		)
 	}
 }
 
 func TestDeleteProfesor(t *testing.T) {
 	clearTableUsuario()
-	addProfesores(1)
 	ensureAuthorizedUserExists()
+
+	clearTableProfesor()
+	addProfesores(1)
+
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/profesores/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	req, _ = http.NewRequest("DELETE", "/users/1", nil)
+	req, _ = http.NewRequest("DELETE", "/profesores/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response = executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
@@ -187,8 +213,9 @@ const tableProfesorCreationQuery = `
 CREATE TABLE IF NOT EXISTS profesores
 	(
 		id SERIAL,
-		valor TEXT NOT NULL,
-		correcto BOOLEAN NOT NULL,
+		nombres VARCHAR(200) NOT NULL,
+		apellidos VARCHAR(200) NOT NULL,
+		usuarioId INT REFERENCES usuarios(id),
 
 		activo BOOLEAN NOT NULL,
 		createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -210,6 +237,10 @@ func clearTableProfesor() {
 }
 
 func addProfesores(count int) {
+	clearTableUsuario()
+	addUsers(count)
+	now := time.Now()
+
 	if count < 1 {
 		count = 1
 	}
@@ -217,10 +248,11 @@ func addProfesores(count int) {
 	for i := 0; i < count; i++ {
 		globals.DB.Exec(
 			context.Background(),
-			`INSERT INTO profesores(valor, correcto, activo)
-			VALUES($1, $2, $3)`,
-			"valor_"+strconv.Itoa(i),
-			i%2 == 1,
-			true)
+			`INSERT INTO profesores(nombres, apellidos,
+			usuarioId, activo, createdAt, updatedAt)
+			VALUES($1, $2, $3, $4, $5, $6)`,
+			"prof_nom_"+strconv.Itoa(i),
+			"prof_ap_"+strconv.Itoa(i),
+			i+1, i%2 == 0, now, now)
 	}
 }

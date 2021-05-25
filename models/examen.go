@@ -30,7 +30,7 @@ func (e *Examen) CreateExamen(db *pgxpool.Pool) error {
 		VALUES($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id`,
 		e.Nombre, e.FechaInicio, e.FechaFinal, e.CursoId,
-		true, now, now).Scan(&e.ID)
+		e.Activo, now, now).Scan(&e.ID)
 }
 
 func (e *Examen) GetExamen(db *pgxpool.Pool) error {

@@ -10,16 +10,16 @@ import (
 
 // faltan campos?
 type Trabajo struct {
-	ID          int    `json:"id"`
-	Descripcion string `json:"descripcion"`
-	CursoId     int    `json:"cursoId"`
-	Curso       Curso  `json:"curso"`
-
-	Activo      bool      `json:"activo"`
+	ID          int       `json:"id"`
+	Descripcion string    `json:"descripcion"`
 	FechaInicio time.Time `json:"fechaInicio"`
 	FechaFinal  time.Time `json:"fechaFinal"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	CursoId     int       `json:"cursoId"`
+	Curso       Curso     `json:"curso"`
+
+	Activo    bool      `json:"activo"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 func (t *Trabajo) CreateTrabajo(db *pgxpool.Pool) error {

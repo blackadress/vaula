@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS alternativas
 		correcto BOOLEAN NOT NULL,
 
 		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		createdAt TIMESTAMPTZ,
 		updatedAt TIMESTAMPTZ
 	)
 `

@@ -9,13 +9,16 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/blackadress/vaula/globals"
 )
 
 func TestEmptyTrabajoTable(t *testing.T) {
-	clearTableTrabajo()
+	clearTableUsuario()
 	ensureAuthorizedUserExists()
+
+	clearTableTrabajo()
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
@@ -33,13 +36,15 @@ func TestEmptyTrabajoTable(t *testing.T) {
 }
 
 func TestGetNonExistentTrabajo(t *testing.T) {
-	clearTableTrabajo()
+	clearTableUsuario()
 	ensureAuthorizedUserExists()
+
+	clearTableTrabajo()
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/asdf/11", nil)
+	req, _ := http.NewRequest("GET", "/trabajos/11", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 
@@ -56,14 +61,16 @@ func TestGetNonExistentTrabajo(t *testing.T) {
 
 func TestCreateTrabajo(t *testing.T) {
 	clearTableUsuario()
+	clearTableTrabajo()
 
 	var jsonStr = []byte(`
 	{
-		"username": "user_test",
-		"password": "1234",
-		"email": "user_test@test.ts"
+		"descripcion": "trabajo_desc_test",
+		"fechaInicio": "2016-06-22 19:10:25-05",
+		"fechaFinal": "2016-06-24 19:10:25-05",
+		"cursoId": 1
 	}`)
-	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(jsonStr))
+	req, _ := http.NewRequest("POST", "/trabajos", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 
 	response := executeRequest(req, a)
@@ -72,16 +79,20 @@ func TestCreateTrabajo(t *testing.T) {
 	var m map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	if m["username"] != "user_test" {
-		t.Errorf("Expected user username to be 'user_test'. Got '%v'", m["username"])
+	if m["descripcion"] != "trabajo_desc_test" {
+		t.Errorf("Expected trabajo descripcion to be 'trabajo_desc_test'. Got '%v'", m["descripcion"])
 	}
 
-	if m["password"] == "1234" {
-		t.Errorf("Expected password to have been hashed, it is still '%v'", m["password"])
+	if m["fechaInicio"] == "2016-06-22 19:10:25-05" {
+		t.Errorf("Expected fechaInicio to be '2016-06-22 19:10:25-05'. Got '%v'", m["fechaInicio"])
 	}
 
-	if m["email"] != "user_test@test.ts" {
-		t.Errorf("Expected user email to be 'user_test@test.ts'. Got '%v'", m["email"])
+	if m["fechaFinal"] != "2016-06-24 19:10:25-05" {
+		t.Errorf("Expected user fechaFinal to be '2016-06-24 19:10:25-05'. Got '%v'", m["fechaFinal"])
+	}
+
+	if m["cursoId"] != 1.0 {
+		t.Errorf("Expected cursoId to be '1'. Got '%v'", m["cursoId"])
 	}
 
 	if m["id"] != 1.0 {
@@ -91,13 +102,14 @@ func TestCreateTrabajo(t *testing.T) {
 
 func TestGetTrabajo(t *testing.T) {
 	clearTableUsuario()
+	clearTableTrabajo()
 	addTrabajos(1)
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/trabajos/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 
@@ -106,24 +118,33 @@ func TestGetTrabajo(t *testing.T) {
 
 func TestUpdateTrabajo(t *testing.T) {
 	clearTableUsuario()
-	addTrabajos(1)
 	ensureAuthorizedUserExists()
+	// la funcion add cursos debe ser llamada despues de
+	// addTrabajos para que el trabajo generado pueda
+	// ser modificado con el id del curso generado luego
+	clearTableCurso()
+	cleartableTrabajo()
+	addTrabajos(1)
+	addCursos(1)
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/trabajos/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 	var originalTrabajo map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &originalTrabajo)
 
 	var jsonStr = []byte(`{
-		"username": "user_test_updated",
-		"password": "1234_updated",
-		"email": "user_test_updated@test.ts"}`)
+		"descripcion": "trabajo_desc_test_updated",
+		"fechaInicio": "2016-06-22 19:10:25-05_updated",
+		"fechaFinal": "trabajo_desc_test_updated@test.ts"
+		"cursoId": 2,
+		"activo": false
+	}`)
 
-	req, _ = http.NewRequest("PUT", "/users/1", bytes.NewBuffer(jsonStr))
+	req, _ = http.NewRequest("PUT", "/trabajos/1", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", token_str)
 	response = executeRequest(req, a)
@@ -137,47 +158,66 @@ func TestUpdateTrabajo(t *testing.T) {
 		t.Errorf("Expected the id to remain the same (%v). Got %v", originalTrabajo["id"], m["id"])
 	}
 
-	if m["username"] == originalTrabajo["username"] {
+	if m["descripcion"] == originalTrabajo["descripcion"] {
 		t.Errorf(
-			"Expected the username to change from '%v' to '%v'. Got '%v'",
-			originalTrabajo["username"],
-			m["username"],
-			originalTrabajo["username"],
+			"Expected the descripcion to change from '%v' to '%v'. Got '%v'",
+			originalTrabajo["descripcion"],
+			m["descripcion"],
+			originalTrabajo["descripcion"],
 		)
 	}
 
-	if m["password"] == originalTrabajo["password"] {
+	if m["fechaInicio"] == originalTrabajo["fechaInicio"] {
 		t.Errorf(
-			"Expected the password to change from '%v' to '%v'. Got '%v'",
-			originalTrabajo["password"],
-			m["password"],
-			originalTrabajo["password"],
+			"Expected the fechaInicio to change from '%v' to '%v'. Got '%v'",
+			originalTrabajo["fechaInicio"],
+			m["fechaInicio"],
+			originalTrabajo["fechaInicio"],
 		)
 	}
 
-	if m["email"] == originalTrabajo["email"] {
+	if m["fechaFinal"] == originalTrabajo["fechaFinal"] {
 		t.Errorf(
-			"Expected the email to change from '%v', to '%v'. Got '%v'",
-			originalTrabajo["email"],
-			m["email"],
-			originalTrabajo["email"],
+			"Expected the fechaFinal to change from '%v', to '%v'. Got '%v'",
+			originalTrabajo["fechaFinal"],
+			m["fechaFinal"],
+			originalTrabajo["fechaFinal"],
+		)
+	}
+
+	if m["cursoId"] == originalTrabajo["cursoId"] {
+		t.Errorf(
+			"Expected the cursoId to change from '%v', to '%v'. Got '%v'",
+			originalTrabajo["cursoId"],
+			m["cursoId"],
+			originalTrabajo["cursoId"],
+		)
+	}
+
+	if m["activo"] == originalTrabajo["activo"] {
+		t.Errorf(
+			"Expected the activo to change from '%v', to '%v'. Got '%v'",
+			originalTrabajo["activo"],
+			m["activo"],
+			originalTrabajo["activo"],
 		)
 	}
 }
 
 func TestDeleteTrabajo(t *testing.T) {
 	clearTableUsuario()
-	addTrabajos(1)
 	ensureAuthorizedUserExists()
+	clearTableTrabajo()
+	addTrabajos(1)
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/trabajos/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	req, _ = http.NewRequest("DELETE", "/users/1", nil)
+	req, _ = http.NewRequest("DELETE", "/trabajos/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response = executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
@@ -187,12 +227,14 @@ const tableTrabajoCreationQuery = `
 CREATE TABLE IF NOT EXISTS trabajos
 	(
 		id SERIAL,
-		valor TEXT NOT NULL,
-		correcto BOOLEAN NOT NULL,
+		descripcion TEXT NOT NULL,
+		fechaInicio TIMESTAMPTZ NOT NULL,
+		fechaFinal TIMESTAMPTZ NOT NULL,
+		cursoId INT REFERENCES cursos(id),
 
 		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-		updatedAt TIMESTAMPTZ
+		createdAt TIMESTAMPTZ NOT NULL,
+		updatedAt TIMESTAMPTZ NOT NULL
 	)
 `
 
@@ -210,6 +252,10 @@ func clearTableTrabajo() {
 }
 
 func addTrabajos(count int) {
+	clearTableCurso()
+	addCursos(count)
+	now := time.Now()
+
 	if count < 1 {
 		count = 1
 	}
@@ -217,10 +263,11 @@ func addTrabajos(count int) {
 	for i := 0; i < count; i++ {
 		globals.DB.Exec(
 			context.Background(),
-			`INSERT INTO trabajos(valor, correcto, activo)
-			VALUES($1, $2, $3)`,
-			"valor_"+strconv.Itoa(i),
-			i%2 == 1,
-			true)
+			`INSERT INTO trabajos(descripcion, fechaInicio,
+			fechaFinal, cursoId, activo, createdAt, updatedAt)
+			VALUES($1, $2, $3, $4, $5, $6, $7)`,
+			"descripcion_trabajo_test_"+strconv.Itoa(i),
+			"2016-06-25 19:10:25-05", "2016-06-26 19:10:25-05",
+			i+1, i%2 == 1, now, now)
 	}
 }

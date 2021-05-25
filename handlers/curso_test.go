@@ -9,18 +9,20 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/blackadress/vaula/globals"
 )
 
-func TestEmptyAsdfTable(t *testing.T) {
-	clearTableAsdf()
+func TestEmptyCursoTable(t *testing.T) {
+	clearTableCurso()
+	clearTableUsuario()
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/asdfs", nil)
+	req, _ := http.NewRequest("GET", "/cursos", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 
@@ -32,14 +34,15 @@ func TestEmptyAsdfTable(t *testing.T) {
 	}
 }
 
-func TestGetNonExistentAsdf(t *testing.T) {
-	clearTableAsdf()
+func TestGetNonExistentCurso(t *testing.T) {
+	clearTableCurso()
+	clearTableUsuario()
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/asdf/11", nil)
+	req, _ := http.NewRequest("GET", "/cursos/11", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 
@@ -47,23 +50,26 @@ func TestGetNonExistentAsdf(t *testing.T) {
 
 	var m map[string]string
 	json.Unmarshal(response.Body.Bytes(), &m)
-	if m["error"] != "Asdf not found" {
+	if m["error"] != "Curso not found" {
 		t.Errorf(
-			"Se espera que la key 'error' sea 'Asdf not found'. Got '%s'",
+			"Se espera que la key 'error' sea 'Curso not found'. Got '%s'",
 			m["error"])
 	}
 }
 
-func TestCreateAsdf(t *testing.T) {
+func TestCreateCurso(t *testing.T) {
+	clearTableCurso()
 	clearTableUsuario()
+	ensureAuthorizedUserExists()
 
 	var jsonStr = []byte(`
 	{
-		"username": "user_test",
-		"password": "1234",
-		"email": "user_test@test.ts"
+		"nombre": "curso_test",
+		"siglas": "CS-TS-123",
+		"silabo": "silabo_test",
+		"semestre": "TS-2021-II"
 	}`)
-	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(jsonStr))
+	req, _ := http.NewRequest("POST", "/cursos", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 
 	response := executeRequest(req, a)
@@ -72,16 +78,24 @@ func TestCreateAsdf(t *testing.T) {
 	var m map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	if m["username"] != "user_test" {
-		t.Errorf("Expected user username to be 'user_test'. Got '%v'", m["username"])
+	if m["nombre"] != "curso_test" {
+		t.Errorf("Expected user nombre to be 'curso_test'. Got '%v'", m["nombre"])
 	}
 
-	if m["password"] == "1234" {
-		t.Errorf("Expected password to have been hashed, it is still '%v'", m["password"])
+	if m["siglas"] == "CS-TS-123" {
+		t.Errorf("Expected siglas to be 'CS-TS-123'. Got '%v'", m["siglas"])
 	}
 
-	if m["email"] != "user_test@test.ts" {
-		t.Errorf("Expected user email to be 'user_test@test.ts'. Got '%v'", m["email"])
+	if m["silabo"] != "silabo_test" {
+		t.Errorf("Expected silabo to be 'silabo_test'. Got '%v'", m["silabo"])
+	}
+
+	if m["semestre"] != "TS-2021-II" {
+		t.Errorf("Expected semestre to be 'TS-2021-II'. Got '%v'", m["semestre"])
+	}
+
+	if m["activo"] {
+		t.Errorf("Expected activo to be 'true'. Got '%v'", m["activo"])
 	}
 
 	if m["id"] != 1.0 {
@@ -89,41 +103,46 @@ func TestCreateAsdf(t *testing.T) {
 	}
 }
 
-func TestGetAsdf(t *testing.T) {
+func TestGetCurso(t *testing.T) {
+	clearTableCurso()
 	clearTableUsuario()
-	addAsdfs(1)
 	ensureAuthorizedUserExists()
+	addCursos(1)
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/cursos/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 
 	checkResponseCode(t, http.StatusOK, response.Code)
 }
 
-func TestUpdateAsdf(t *testing.T) {
+func TestUpdateCurso(t *testing.T) {
+	clearTableCurso()
 	clearTableUsuario()
-	addAsdfs(1)
 	ensureAuthorizedUserExists()
+
+	addCursos(1)
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/cursos/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
-	var originalAsdf map[string]interface{}
-	json.Unmarshal(response.Body.Bytes(), &originalAsdf)
+	var originalCurso map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &originalCurso)
 
 	var jsonStr = []byte(`{
-		"username": "user_test_updated",
-		"password": "1234_updated",
-		"email": "user_test_updated@test.ts"}`)
+		"nombre": "curso_test_updated",
+		"siglas": "SIG-UPD",
+		"silabo": "silabo_test_upd",
+		"semestre": "UP-3030",
+		"activo": false}`)
 
-	req, _ = http.NewRequest("PUT", "/users/1", bytes.NewBuffer(jsonStr))
+	req, _ = http.NewRequest("PUT", "/cursos/1", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", token_str)
 	response = executeRequest(req, a)
@@ -133,94 +152,120 @@ func TestUpdateAsdf(t *testing.T) {
 	var m map[string]interface{}
 	json.Unmarshal(response.Body.Bytes(), &m)
 
-	if m["id"] != originalAsdf["id"] {
-		t.Errorf("Expected the id to remain the same (%v). Got %v", originalAsdf["id"], m["id"])
+	if m["id"] != originalCurso["id"] {
+		t.Errorf("Expected the id to remain the same (%v). Got %v", originalCurso["id"], m["id"])
 	}
 
-	if m["username"] == originalAsdf["username"] {
+	if m["nombre"] == originalCurso["nombre"] {
 		t.Errorf(
-			"Expected the username to change from '%v' to '%v'. Got '%v'",
-			originalAsdf["username"],
-			m["username"],
-			originalAsdf["username"],
+			"Expected the nombre to change from '%v' to '%v'. Got '%v'",
+			originalCurso["nombre"],
+			m["nombre"],
+			originalCurso["nombre"],
 		)
 	}
 
-	if m["password"] == originalAsdf["password"] {
+	if m["siglas"] == originalCurso["siglas"] {
 		t.Errorf(
-			"Expected the password to change from '%v' to '%v'. Got '%v'",
-			originalAsdf["password"],
-			m["password"],
-			originalAsdf["password"],
+			"Expected the siglas to change from '%v' to '%v'. Got '%v'",
+			originalCurso["siglas"],
+			m["siglas"],
+			originalCurso["siglas"],
 		)
 	}
 
-	if m["email"] == originalAsdf["email"] {
+	if m["silabo"] == originalCurso["silabo"] {
 		t.Errorf(
-			"Expected the email to change from '%v', to '%v'. Got '%v'",
-			originalAsdf["email"],
-			m["email"],
-			originalAsdf["email"],
+			"Expected the silabo to change from '%v', to '%v'. Got '%v'",
+			originalCurso["silabo"],
+			m["silabo"],
+			originalCurso["silabo"],
+		)
+	}
+
+	if m["semestre"] == originalCurso["semestre"] {
+		t.Errorf(
+			"Expected the semestre to change from '%v', to '%v'. Got '%v'",
+			originalCurso["semestre"],
+			m["semestre"],
+			originalCurso["semestre"],
+		)
+	}
+
+	if m["activo"] == originalCurso["activo"] {
+		t.Errorf(
+			"Expected the activo to change from '%v', to '%v'. Got '%v'",
+			originalCurso["activo"],
+			m["activo"],
+			originalCurso["activo"],
 		)
 	}
 }
 
-func TestDeleteAsdf(t *testing.T) {
+func TestDeleteCurso(t *testing.T) {
+	clearTableCurso()
 	clearTableUsuario()
-	addAsdf(1)
+	ensureAuthorizedUserExists()
+
+	addCursos(1)
 	ensureAuthorizedUserExists()
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/cursos/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	req, _ = http.NewRequest("DELETE", "/users/1", nil)
+	req, _ = http.NewRequest("DELETE", "/cursos/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response = executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
 }
 
-const tableAsdfCreationQuery = `
-CREATE TABLE IF NOT EXISTS asdfs
+const tableCursoCreationQuery = `
+CREATE TABLE IF NOT EXISTS cursos
 	(
 		id SERIAL,
-		valor TEXT NOT NULL,
-		correcto BOOLEAN NOT NULL,
+		nombre VARCHAR(200) NOT NULL,
+		siglas VARCHAR(20) NOT NULL,
+		silabo VARCHAR(200) NOT NULL,
+		semestre VARCHAR(20) NOT NULL,
 
 		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		createdAt TIMESTAMPTZ,
 		updatedAt TIMESTAMPTZ
 	)
 `
 
 // es posible hacer decouple de `globals.DB`?
-func ensureTableAsdfExists() {
-	_, err := globals.DB.Exec(context.Background(), tableAsdfCreationQuery)
+func ensureTableCursoExists() {
+	_, err := globals.DB.Exec(context.Background(), tableCursoCreationQuery)
 	if err != nil {
-		log.Printf("TEST: error creando tabla asdfs: %s", err)
+		log.Printf("TEST: error creando tabla cursoss: %s", err)
 	}
 }
 
-func clearTableAsdf() {
-	globals.DB.Exec(context.Background(), "DELETE FROM asdfs")
-	globals.DB.Exec(context.Background(), "ALTER SEQUENCE asdfs_id_seq RESTART WITH 1")
+func clearTableCurso() {
+	globals.DB.Exec(context.Background(), "DELETE FROM cursos")
+	globals.DB.Exec(context.Background(), "ALTER SEQUENCE cursos_id_seq RESTART WITH 1")
 }
 
-func addAsdfs(count int) {
+func addCursos(count int) {
 	if count < 1 {
 		count = 1
 	}
+	now := time.Now()
+	semestre := fmt.Sprintf("%.20s", "semestre_"+strconv.Itoa(i))
 
 	for i := 0; i < count; i++ {
 		globals.DB.Exec(
 			context.Background(),
-			`INSERT INTO asdfs(valor, correcto, activo)
-			VALUES($1, $2, $3)`,
-			"valor_"+strconv.Itoa(i),
-			i%2 == 1,
-			true)
+			`INSERT INTO cursos(nombre, siglas, silabo, semestre, activo, createdAt, updatedAt)
+			VALUES($1, $2, $3, $4, $5, $6, $7)`,
+			"curso_test_"+strconv.Itoa(i),
+			"TS-0"+strconv.Itoa(i),
+			"silabo_test_"+strconv.Itoa(i),
+			semestre, i%2 == 0, now, now)
 	}
 }
