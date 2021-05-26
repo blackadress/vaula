@@ -12,8 +12,6 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
-
-	"github.com/blackadress/vaula/globals"
 )
 
 func TestEmptyUsuarioTable(t *testing.T) {

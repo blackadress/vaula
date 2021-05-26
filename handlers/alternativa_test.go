@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
-
-	"github.com/blackadress/vaula/globals"
 )
 
 func TestEmptyAlternativaTable(t *testing.T) {

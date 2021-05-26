@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/blackadress/vaula/globals"
 )
 
 func TestEmptyProfesorTable(t *testing.T) {
