@@ -31,12 +31,22 @@ func TestMain(m *testing.M) {
 	// asegurarse de que todas las tablas existen
 	ensureTableUsuarioExists()
 	ensureTableAlternativaExists()
+	ensureTableCursoExists()
+	ensureTableExamenExists()
+	ensureTablePreguntaExists()
+	ensureTableProfesorExists()
+	ensureTableTrabajoExists()
 
 	code := m.Run()
 
 	// limpiar las tablas de la BD
 	clearTableUsuario()
 	clearTableAlternativa()
+	clearTableCurso()
+	clearTableExamen()
+	clearTablePregunta()
+	clearTableProfesor()
+	clearTableTrabajo()
 	os.Exit(code)
 }
 

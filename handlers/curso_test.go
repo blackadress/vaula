@@ -94,7 +94,7 @@ func TestCreateCurso(t *testing.T) {
 		t.Errorf("Expected semestre to be 'TS-2021-II'. Got '%v'", m["semestre"])
 	}
 
-	if m["activo"] {
+	if m["activo"] == true {
 		t.Errorf("Expected activo to be 'true'. Got '%v'", m["activo"])
 	}
 
@@ -226,7 +226,7 @@ func TestDeleteCurso(t *testing.T) {
 const tableCursoCreationQuery = `
 CREATE TABLE IF NOT EXISTS cursos
 	(
-		id SERIAL,
+		id INT PRIMARY KEY,
 		nombre VARCHAR(200) NOT NULL,
 		siglas VARCHAR(20) NOT NULL,
 		silabo VARCHAR(200) NOT NULL,
@@ -238,17 +238,17 @@ CREATE TABLE IF NOT EXISTS cursos
 	)
 `
 
-// es posible hacer decouple de `globals.DB`?
+// es posible hacer decouple de `a.DB`?
 func ensureTableCursoExists() {
-	_, err := globals.DB.Exec(context.Background(), tableCursoCreationQuery)
+	_, err := a.DB.Exec(context.Background(), tableCursoCreationQuery)
 	if err != nil {
 		log.Printf("TEST: error creando tabla cursoss: %s", err)
 	}
 }
 
 func clearTableCurso() {
-	globals.DB.Exec(context.Background(), "DELETE FROM cursos")
-	globals.DB.Exec(context.Background(), "ALTER SEQUENCE cursos_id_seq RESTART WITH 1")
+	a.DB.Exec(context.Background(), "DELETE FROM cursos")
+	a.DB.Exec(context.Background(), "ALTER SEQUENCE cursos_id_seq RESTART WITH 1")
 }
 
 func addCursos(count int) {
@@ -256,10 +256,10 @@ func addCursos(count int) {
 		count = 1
 	}
 	now := time.Now()
-	semestre := fmt.Sprintf("%.20s", "semestre_"+strconv.Itoa(i))
 
 	for i := 0; i < count; i++ {
-		globals.DB.Exec(
+		semestre := fmt.Sprintf("%.20s", "semestre_"+strconv.Itoa(i))
+		a.DB.Exec(
 			context.Background(),
 			`INSERT INTO cursos(nombre, siglas, silabo, semestre, activo, createdAt, updatedAt)
 			VALUES($1, $2, $3, $4, $5, $6, $7)`,

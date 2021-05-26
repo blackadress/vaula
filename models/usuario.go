@@ -11,51 +11,57 @@ import (
 )
 
 type User struct {
-	ID          int       `json:"id"`
-	Username    string    `json:"username"`
-	Password    string    `json:"password"`
-	Email       string    `json:"email"`
-	Activo      bool      `json:"activo"`
-	FechaInicio time.Time `json:"fechaInicio"`
-	FechaFinal  time.Time `json:"fechaFinal"`
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
+
+	Activo    bool      `json:"activo"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 func (u *User) GetUser(db *pgxpool.Pool) error {
 	return db.QueryRow(
 		context.Background(),
-		`SELECT username, password, email
+		`SELECT username, password, email,
+		activo, createdAt, updatedAt,
 		FROM users
 		WHERE id=$1`,
 		u.ID,
-	).Scan(&u.Username, &u.Password, &u.Email)
+	).Scan(&u.Username, &u.Password, &u.Email,
+		&u.Activo, &u.CreatedAt, &u.UpdatedAt)
 }
 
 func (u *User) GetUserByUsername(db *pgxpool.Pool) error {
 	return db.QueryRow(context.Background(),
-		`SELECT id, password, email
+		`SELECT id, password, email,
+		activo, createdAt, updatedAt
 		FROM users
 		WHERE username=$1`,
 		u.Username,
-	).Scan(&u.ID, &u.Password, &u.Email)
+	).Scan(&u.ID, &u.Password, &u.Email,
+		&u.Activo, &u.CreatedAt, &u.UpdatedAt)
 }
 
 func (u *User) GetUserNoPwd(db *pgxpool.Pool) error {
 	return db.QueryRow(context.Background(),
-		`SELECT id, email
+		`SELECT id, email, activo, createdAt, updatedAt
 		FROM users
 		WHERE id=$1`,
 		u.ID,
-	).Scan(&u.ID, &u.Email)
+	).Scan(&u.ID, &u.Email, &u.Activo,
+		&u.CreatedAt, &u.UpdatedAt)
 }
 
 func (u *User) UpdateUser(db *pgxpool.Pool) error {
+	now := time.Now()
 	_, err := db.Exec(context.Background(),
-		`UPDATE users SET username=$1, password=$2, email=$3
-		WHERE id=$4`,
-		u.Username,
-		u.Password,
-		u.Email,
-		u.ID,
+		`UPDATE users SET username=$1, password=$2, email=$3,
+		activo=$4, updatedAt=$5
+		WHERE id=$6`,
+		u.Username, u.Password, u.Email,
+		u.Activo, now, u.ID,
 	)
 
 	return err
@@ -70,19 +76,19 @@ func (u *User) DeleteUser(db *pgxpool.Pool) error {
 }
 
 func (u *User) CreateUser(db *pgxpool.Pool) error {
+	now := time.Now()
 	return db.QueryRow(context.Background(),
-		`INSERT INTO users(username, password, email)
-		VALUES($1, $2, $3)
-		RETURNING id`,
-		u.Username,
-		u.Password,
-		u.Email,
-	).Scan(&u.ID)
+		`INSERT INTO usuarios(username, password, email,
+		activo, createdAt, updatedAt)
+		VALUES($1, $2, $3, $4, $5, $6)
+		RETURNING id, createdAt, updatedAt`,
+		u.Username, u.Password, u.Email,
+		u.Activo, now, now).Scan(&u.ID, &u.CreatedAt, &u.UpdatedAt)
 }
 
 func GetUsers(db *pgxpool.Pool) ([]User, error) {
 	rows, err := db.Query(context.Background(),
-		`SELECT id, username, email
+		`SELECT id, username, email, activo, createdAt, updatedAt
 		FROM users`,
 	)
 
@@ -96,9 +102,10 @@ func GetUsers(db *pgxpool.Pool) ([]User, error) {
 
 	for rows.Next() {
 		var u User
-		if err := rows.Scan(
+		err := rows.Scan(
 			&u.ID, &u.Username, &u.Email,
-		); err != nil {
+			&u.Activo, &u.CreatedAt, &u.UpdatedAt)
+		if err != nil {
 			log.Println("The rows we got from the DB can't be 'Scan'(ed)")
 			return nil, err
 		}
@@ -146,6 +153,8 @@ func (u *User) GetJWTForUser() (JWToken, error) {
 	return token, err
 }
 
+// vale verga cuando se le da un token que no es
+// revisar el como se handlean los errores
 func ValidateToken(tkn string) (bool, Claims, error) {
 	secretKey := []byte(os.Getenv("SECRET_KEY"))
 

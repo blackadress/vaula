@@ -83,7 +83,7 @@ func TestCreatePregunta(t *testing.T) {
 		t.Errorf("Expected examenId to be '1'. Got '%v'", m["examenId"])
 	}
 
-	if m["activo"] {
+	if m["activo"] == true {
 		t.Errorf("Expected pregunta activo to be 'true'. Got '%v'", m["activo"])
 	}
 
@@ -189,9 +189,9 @@ func TestDeletePregunta(t *testing.T) {
 }
 
 const tablePreguntaCreationQuery = `
-CREATE TABLE IF NOT EXISTS preguntass
+CREATE TABLE IF NOT EXISTS preguntas
 	(
-		id SERIAL,
+		id INT PRIMARY KEY,
 		enunciado TEXT NOT NULL,
 		examenId INT REFERENCES examenes(id),
 
@@ -201,17 +201,18 @@ CREATE TABLE IF NOT EXISTS preguntass
 	)
 `
 
-// es posible hacer decouple de `globals.DB`?
+// es posible hacer decouple de `a.DB`?
 func ensureTablePreguntaExists() {
-	_, err := globals.DB.Exec(context.Background(), tablePreguntaCreationQuery)
+	ensureTableExamenExists()
+	_, err := a.DB.Exec(context.Background(), tablePreguntaCreationQuery)
 	if err != nil {
 		log.Printf("TEST: error creando tabla preguntass: %s", err)
 	}
 }
 
 func clearTablePregunta() {
-	globals.DB.Exec(context.Background(), "DELETE FROM preguntass")
-	globals.DB.Exec(context.Background(), "ALTER SEQUENCE preguntass_id_seq RESTART WITH 1")
+	a.DB.Exec(context.Background(), "DELETE FROM preguntass")
+	a.DB.Exec(context.Background(), "ALTER SEQUENCE preguntass_id_seq RESTART WITH 1")
 }
 
 func addPreguntas(count int) {
@@ -224,7 +225,7 @@ func addPreguntas(count int) {
 	}
 
 	for i := 0; i < count; i++ {
-		globals.DB.Exec(
+		a.DB.Exec(
 			context.Background(),
 			`INSERT INTO preguntass(enunciado, examenId, activo, createdAt, updatedAt)
 			VALUES($1, $2, $3, $4, $5)`,

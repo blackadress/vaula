@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/blackadress/vaula/globals"
 	"github.com/blackadress/vaula/models"
 
 	"github.com/dgrijalva/jwt-go"
@@ -18,7 +17,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -27,7 +26,7 @@ func getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := models.User{ID: id}
-	if err := u.GetUser(globals.DB); err != nil {
+	if err := u.GetUser(a.DB); err != nil {
 		switch err {
 		case pgx.ErrNoRows:
 			log.Printf("GET %s code: %d", r.RequestURI, http.StatusNotFound)
@@ -42,8 +41,8 @@ func getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, u)
 }
 
-func getUsersHandler(w http.ResponseWriter, r *http.Request) {
-	users, err := models.GetUsers(globals.DB)
+func (a *App) getUsersHandler(w http.ResponseWriter, r *http.Request) {
+	users, err := models.GetUsers(a.DB)
 
 	if err != nil {
 		log.Printf("GET %s code: %d", r.RequestURI, http.StatusInternalServerError)
@@ -55,7 +54,7 @@ func getUsersHandler(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, users)
 }
 
-func createUserHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	var u models.User
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&u); err != nil {
@@ -68,7 +67,7 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 	// hashing the password
 	u.Password = hashAndSalt([]byte(u.Password))
 
-	if err := u.CreateUser(globals.DB); err != nil {
+	if err := u.CreateUser(a.DB); err != nil {
 		log.Printf("POST %s code: %d", r.RequestURI, http.StatusInternalServerError)
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -79,7 +78,7 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, u)
 }
 
-func updateUserHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -99,7 +98,7 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	u.ID = id
 
-	if err := u.UpdateUser(globals.DB); err != nil {
+	if err := u.UpdateUser(a.DB); err != nil {
 		log.Printf("PUT %s code: %d", r.RequestURI, http.StatusInternalServerError)
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -109,7 +108,7 @@ func updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, u)
 }
 
-func deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -119,14 +118,14 @@ func deleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := models.User{ID: id}
-	if err := u.DeleteUser(globals.DB); err != nil {
+	if err := u.DeleteUser(a.DB); err != nil {
 		log.Printf("PUT %s code: %d", r.RequestURI, http.StatusInternalServerError)
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 }
 
-func auth(w http.ResponseWriter, r *http.Request) {
+func (a *App) auth(w http.ResponseWriter, r *http.Request) {
 	// attackers shouldn't know if a username exists on the DB
 	// so we should roughly take the same amount of time
 	// either if the user exists or doesn't
@@ -146,10 +145,9 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	uFetched.Username = u.Username
 
 	// therefore, this piece of code can't respond without using a 'CompareHashAndPassword',
-	// maybe write to Log for internal debugging purposes
 	// but can't send a response just after checking
 	// if the username exists on the DB
-	if err := uFetched.GetUserByUsername(globals.DB); err != nil {
+	if err := uFetched.GetUserByUsername(a.DB); err != nil {
 		log.Printf("No existe usuario en la DB")
 		bcrypt.CompareHashAndPassword([]byte(uFetched.Password), []byte("thereIsNoUser"))
 		log.Printf("POST %s code: %d", r.RequestURI, http.StatusBadRequest)
@@ -176,7 +174,7 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func refresh(w http.ResponseWriter, r *http.Request) {
+func (a *App) refresh(w http.ResponseWriter, r *http.Request) {
 	if r.Header["Refresh"] == nil {
 		respondWithError(w, http.StatusBadRequest, "")
 		return
@@ -204,7 +202,7 @@ func refresh(w http.ResponseWriter, r *http.Request) {
 	}
 	// check if userID is in DB
 	u := models.User{ID: claims.UserId}
-	if err := u.GetUserNoPwd(globals.DB); err != nil {
+	if err := u.GetUserNoPwd(a.DB); err != nil {
 		respondWithError(w, http.StatusUnauthorized, err.Error())
 		return
 	}

@@ -8,25 +8,26 @@ import (
 	"net/http"
 )
 
-// func main() {
-// 	//ensureUserExists()
-// 	//token := getTestJWT()
-// 	//println("this is the token obtained", token)
-// 	//getUsersT(token)
+func main() {
+	// ensureUserExists()
+	token := getTestJWT()
+	fmt.Printf("this is the token obtained '%s'", token)
 
-// 	fullToken := getFullJWT()
-// 	fmt.Printf("%#v\n", fullToken)
-// 	println("*****************************************************")
+	// getUsersT(token)
 
-// 	newPair := refreshToken(fullToken.AccessToken)
-// 	fmt.Printf("%#v\n", newPair)
-// 	println("*****************************************************")
+	// 	fullToken := getFullJWT()
+	// 	fmt.Printf("%#v\n", fullToken)
+	// 	println("*****************************************************")
 
-// 	newPair = refreshToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjExMCwiZXhwIjoxNjIxMzc1ODA1fQ.Bx5rWZpiQUkeEvPWaBYu2TNOic7g3DlgNB6Dj-MRe6o")
-// 	fmt.Printf("%#v\n", newPair)
-// 	println("*****************************************************")
+	// 	newPair := refreshToken(fullToken.AccessToken)
+	// 	fmt.Printf("%#v\n", newPair)
+	// 	println("*****************************************************")
 
-// }
+	// 	newPair = refreshToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjExMCwiZXhwIjoxNjIxMzc1ODA1fQ.Bx5rWZpiQUkeEvPWaBYu2TNOic7g3DlgNB6Dj-MRe6o")
+	// 	fmt.Printf("%#v\n", newPair)
+	// 	println("*****************************************************")
+
+}
 
 type Temp_jwt struct {
 	UserId       int

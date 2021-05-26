@@ -2,17 +2,17 @@ package handlers
 
 import "net/http"
 
-func getProfesorByIdHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) getProfesorByIdHandler(w http.ResponseWriter, r *http.Request) {
 }
 
-func getProfesoresHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) getProfesoresHandler(w http.ResponseWriter, r *http.Request) {
 }
 
-func createProfesorHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) createProfesorHandler(w http.ResponseWriter, r *http.Request) {
 }
 
-func updateProfesorHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) updateProfesorHandler(w http.ResponseWriter, r *http.Request) {
 }
 
-func deleteProfesorHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) deleteProfesorHandler(w http.ResponseWriter, r *http.Request) {
 }

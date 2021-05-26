@@ -194,13 +194,16 @@ func TestRefreshToken(t *testing.T) {
 }
 
 const tableCreationQuery = `
-CREATE TABLE IF NOT EXISTS users
+CREATE TABLE IF NOT EXISTS usuarios
 	(
-		id SERIAL,
+		id INT PRIMARY KEY NOT NULL,
 		username TEXT NOT NULL,
 		password TEXT NOT NULL,
 		email TEXT NOT NULL,
-		CONSTRAINT user_pkey PRIMARY KEY (id)
+
+		activo BOOLEAN,
+		createdAt TIMESTAMPTZ,
+		updatedAt TIMESTAMPTZ
 	)
 `
 
@@ -210,14 +213,14 @@ const userInsertionQuery = `
 `
 
 func ensureTableUsuarioExists() {
-	if _, err := globals.DB.Exec(context.Background(), tableCreationQuery); err != nil {
+	if _, err := a.DB.Exec(context.Background(), tableCreationQuery); err != nil {
 		log.Printf("TEST: error creando tabla de usuarios: %s", err)
 	}
 }
 
 func clearTableUsuario() {
-	globals.DB.Exec(context.Background(), "DELETE FROM users")
-	globals.DB.Exec(context.Background(), "ALTER SEQUENCE users_id_seq RESTART WITH 1")
+	a.DB.Exec(context.Background(), "DELETE FROM users")
+	a.DB.Exec(context.Background(), "ALTER SEQUENCE users_id_seq RESTART WITH 1")
 }
 
 func addUsers(count int) {
@@ -226,7 +229,7 @@ func addUsers(count int) {
 	}
 
 	for i := 0; i < count; i++ {
-		globals.DB.Exec(
+		a.DB.Exec(
 			context.Background(),
 			`INSERT INTO users(username, password, email)
 			VALUES($1, $2, $3)`,

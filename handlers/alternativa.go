@@ -2,17 +2,17 @@ package handlers
 
 import "net/http"
 
-func getAlternativaByIdHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) getAlternativaByIdHandler(w http.ResponseWriter, r *http.Request) {
 }
 
-func getAlternativasHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) getAlternativasHandler(w http.ResponseWriter, r *http.Request) {
 }
 
-func createAlternativaHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) createAlternativaHandler(w http.ResponseWriter, r *http.Request) {
 }
 
-func updateAlternativaHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) updateAlternativaHandler(w http.ResponseWriter, r *http.Request) {
 }
 
-func deleteAlternativaHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) deleteAlternativaHandler(w http.ResponseWriter, r *http.Request) {
 }

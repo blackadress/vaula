@@ -123,7 +123,7 @@ func TestUpdateTrabajo(t *testing.T) {
 	// addTrabajos para que el trabajo generado pueda
 	// ser modificado con el id del curso generado luego
 	clearTableCurso()
-	cleartableTrabajo()
+	clearTableTrabajo()
 	addTrabajos(1)
 	addCursos(1)
 
@@ -226,7 +226,7 @@ func TestDeleteTrabajo(t *testing.T) {
 const tableTrabajoCreationQuery = `
 CREATE TABLE IF NOT EXISTS trabajos
 	(
-		id SERIAL,
+		id INT PRIMARY KEY,
 		descripcion TEXT NOT NULL,
 		fechaInicio TIMESTAMPTZ NOT NULL,
 		fechaFinal TIMESTAMPTZ NOT NULL,
@@ -238,17 +238,18 @@ CREATE TABLE IF NOT EXISTS trabajos
 	)
 `
 
-// es posible hacer decouple de `globals.DB`?
+// es posible hacer decouple de `a.DB`?
 func ensureTableTrabajoExists() {
-	_, err := globals.DB.Exec(context.Background(), tableTrabajoCreationQuery)
+	ensureTableCursoExists()
+	_, err := a.DB.Exec(context.Background(), tableTrabajoCreationQuery)
 	if err != nil {
 		log.Printf("TEST: error creando tabla trabajos: %s", err)
 	}
 }
 
 func clearTableTrabajo() {
-	globals.DB.Exec(context.Background(), "DELETE FROM trabajos")
-	globals.DB.Exec(context.Background(), "ALTER SEQUENCE trabajos_id_seq RESTART WITH 1")
+	a.DB.Exec(context.Background(), "DELETE FROM trabajos")
+	a.DB.Exec(context.Background(), "ALTER SEQUENCE trabajos_id_seq RESTART WITH 1")
 }
 
 func addTrabajos(count int) {
@@ -261,7 +262,7 @@ func addTrabajos(count int) {
 	}
 
 	for i := 0; i < count; i++ {
-		globals.DB.Exec(
+		a.DB.Exec(
 			context.Background(),
 			`INSERT INTO trabajos(descripcion, fechaInicio,
 			fechaFinal, cursoId, activo, createdAt, updatedAt)
