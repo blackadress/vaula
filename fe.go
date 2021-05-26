@@ -5,15 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+
+	"github.com/joho/godotenv"
 )
 
-func main() {
-	// ensureUserExists()
-	token := getTestJWT()
-	fmt.Printf("this is the token obtained '%s'", token)
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Print("No '.env' found")
+	}
+}
 
-	// getUsersT(token)
+func main() {
+	ensureUserExists()
+	token := getTestJWT()
+	fmt.Printf("this is the token obtained '%s'\n", token)
+	getUsersT(token)
 
 	// 	fullToken := getFullJWT()
 	// 	fmt.Printf("%#v\n", fullToken)
@@ -28,6 +36,27 @@ func main() {
 	// 	println("*****************************************************")
 
 }
+
+// func main() {
+// 	u := models.User{Username: "prueba"}
+// 	user := os.Getenv("APP_DB_USERNAME")
+// 	password := os.Getenv("APP_DB_PASSWORD")
+// 	dbname := os.Getenv("APP_DB_NAME")
+// 	println(user, password, dbname)
+// 	// x := 5
+
+// 	connectionString := fmt.Sprintf("postgres://%s:%s@localhost:5432/%s", user, password, dbname)
+// 	println(connectionString)
+// 	db, err := pgxpool.Connect(context.Background(), connectionString)
+// 	if err != nil {
+// 		println("no se conecto con la base de datos ", err)
+// 	} else {
+// 		// row := test.QueryRow(context.Background(), `select * from usuarios where id=$1`, x)
+// 		u.GetUserByUsername(db)
+// 		fmt.Printf("%#v", u)
+// 		db.Close()
+// 	}
+// }
 
 type Temp_jwt struct {
 	UserId       int

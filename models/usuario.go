@@ -26,7 +26,7 @@ func (u *User) GetUser(db *pgxpool.Pool) error {
 		context.Background(),
 		`SELECT username, password, email,
 		activo, createdAt, updatedAt,
-		FROM users
+		FROM usuarios
 		WHERE id=$1`,
 		u.ID,
 	).Scan(&u.Username, &u.Password, &u.Email,
@@ -37,7 +37,7 @@ func (u *User) GetUserByUsername(db *pgxpool.Pool) error {
 	return db.QueryRow(context.Background(),
 		`SELECT id, password, email,
 		activo, createdAt, updatedAt
-		FROM users
+		FROM usuarios
 		WHERE username=$1`,
 		u.Username,
 	).Scan(&u.ID, &u.Password, &u.Email,
@@ -47,7 +47,7 @@ func (u *User) GetUserByUsername(db *pgxpool.Pool) error {
 func (u *User) GetUserNoPwd(db *pgxpool.Pool) error {
 	return db.QueryRow(context.Background(),
 		`SELECT id, email, activo, createdAt, updatedAt
-		FROM users
+		FROM usuarios
 		WHERE id=$1`,
 		u.ID,
 	).Scan(&u.ID, &u.Email, &u.Activo,
@@ -57,7 +57,7 @@ func (u *User) GetUserNoPwd(db *pgxpool.Pool) error {
 func (u *User) UpdateUser(db *pgxpool.Pool) error {
 	now := time.Now()
 	_, err := db.Exec(context.Background(),
-		`UPDATE users SET username=$1, password=$2, email=$3,
+		`UPDATE usuarios SET username=$1, password=$2, email=$3,
 		activo=$4, updatedAt=$5
 		WHERE id=$6`,
 		u.Username, u.Password, u.Email,
@@ -69,7 +69,7 @@ func (u *User) UpdateUser(db *pgxpool.Pool) error {
 
 func (u *User) DeleteUser(db *pgxpool.Pool) error {
 	_, err := db.Exec(context.Background(),
-		`DELETE FROM users WHERE id=$1`,
+		`DELETE FROM usuarios WHERE id=$1`,
 		u.ID,
 	)
 	return err
@@ -89,7 +89,7 @@ func (u *User) CreateUser(db *pgxpool.Pool) error {
 func GetUsers(db *pgxpool.Pool) ([]User, error) {
 	rows, err := db.Query(context.Background(),
 		`SELECT id, username, email, activo, createdAt, updatedAt
-		FROM users`,
+		FROM usuarios`,
 	)
 
 	if err != nil {
