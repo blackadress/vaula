@@ -217,8 +217,8 @@ func ensureTableUsuarioExists() {
 }
 
 func clearTableUsuario() {
-	a.DB.Exec(context.Background(), "DELETE FROM users")
-	a.DB.Exec(context.Background(), "ALTER SEQUENCE users_id_seq RESTART WITH 1")
+	a.DB.Exec(context.Background(), "DELETE FROM usuarios")
+	a.DB.Exec(context.Background(), "ALTER SEQUENCE usuarios_id_seq RESTART WITH 1")
 }
 
 func addUsers(count int) {

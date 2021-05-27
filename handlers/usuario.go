@@ -21,44 +21,47 @@ func (a *App) getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
+		log.Printf("GET %s code: %d ERROR: %s", r.RequestURI, http.StatusBadRequest, err.Error())
 		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
-		log.Printf("GET %s code: %d", r.RequestURI, http.StatusBadRequest)
+		return
 	}
 
 	u := models.User{ID: id}
 	if err := u.GetUser(a.DB); err != nil {
 		switch err {
 		case pgx.ErrNoRows:
-			log.Printf("GET %s code: %d", r.RequestURI, http.StatusNotFound)
+			log.Printf("GET %s code: %d ERROR: %s", r.RequestURI, http.StatusNotFound, err.Error())
 			respondWithError(w, http.StatusNotFound, "User not found")
 		default:
-			log.Printf("GET %s code: %d", r.RequestURI, http.StatusInternalServerError)
+			log.Printf("GET %s code: %d ERROR: %s", r.RequestURI, http.StatusInternalServerError, err.Error())
 			respondWithError(w, http.StatusInternalServerError, err.Error())
 		}
 		return
 	}
 	log.Printf("GET %s code: %d", r.RequestURI, http.StatusOK)
 	respondWithJSON(w, http.StatusOK, u)
+	return
 }
 
 func (a *App) getUsersHandler(w http.ResponseWriter, r *http.Request) {
 	users, err := models.GetUsers(a.DB)
 
 	if err != nil {
-		log.Printf("GET %s code: %d", r.RequestURI, http.StatusInternalServerError)
+		log.Printf("GET %s code: %d ERROR: %s", r.RequestURI, http.StatusInternalServerError, err.Error())
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	log.Printf("GET %s code: %d", r.RequestURI, http.StatusOK)
 	respondWithJSON(w, http.StatusOK, users)
+	return
 }
 
 func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	var u models.User
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&u); err != nil {
-		log.Printf("POST %s code: %d", r.RequestURI, http.StatusBadRequest)
+		log.Printf("POST %s code: %d ERROR: %s", r.RequestURI, http.StatusBadRequest, err.Error())
 		respondWithError(w, http.StatusBadRequest, "Invalid payload")
 		return
 	}
@@ -68,7 +71,8 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	u.Password = hashAndSalt([]byte(u.Password))
 
 	if err := u.CreateUser(a.DB); err != nil {
-		log.Printf("POST %s code: %d", r.RequestURI, http.StatusInternalServerError)
+		log.Printf("POST %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusInternalServerError, err.Error())
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -76,13 +80,15 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("POST %s code: %d", r.RequestURI, http.StatusCreated)
 	respondWithJSON(w, http.StatusCreated, u)
+	return
 }
 
 func (a *App) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		log.Printf("PUT %s code: %d", r.RequestURI, http.StatusBadRequest)
+		log.Printf("PUT %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusBadRequest, err.Error())
 		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
@@ -90,7 +96,8 @@ func (a *App) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	var u models.User
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&u); err != nil {
-		log.Printf("PUT %s code: %d", r.RequestURI, http.StatusBadRequest)
+		log.Printf("PUT %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusBadRequest, err.Error())
 		respondWithError(w, http.StatusBadRequest, "Invalid payload")
 		return
 	}
@@ -99,32 +106,40 @@ func (a *App) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	u.ID = id
 
 	if err := u.UpdateUser(a.DB); err != nil {
-		log.Printf("PUT %s code: %d", r.RequestURI, http.StatusInternalServerError)
+		log.Printf("PUT %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusInternalServerError, err.Error())
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	log.Printf("PUT %s code: %d", r.RequestURI, http.StatusOK)
 	respondWithJSON(w, http.StatusOK, u)
+	return
 }
 
 func (a *App) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		log.Printf("PUT %s code: %d", r.RequestURI, http.StatusBadRequest)
+		log.Printf("PUT %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusBadRequest, err.Error())
 		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
 	u := models.User{ID: id}
 	if err := u.DeleteUser(a.DB); err != nil {
-		log.Printf("PUT %s code: %d", r.RequestURI, http.StatusInternalServerError)
+		log.Printf("PUT %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusInternalServerError, err.Error())
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	respondWithJSON(w, http.StatusOK, map[string]int{"exito": 1, "id": u.ID})
+	return
 }
 
+//
 func (a *App) auth(w http.ResponseWriter, r *http.Request) {
 	// attackers shouldn't know if a username exists on the DB
 	// so we should roughly take the same amount of time
@@ -134,7 +149,8 @@ func (a *App) auth(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&u); err != nil {
 		log.Printf("Formato json invalido")
-		log.Printf("POST %s code: %d", r.RequestURI, http.StatusBadRequest)
+		log.Printf("POST %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusBadRequest, err.Error())
 		respondWithError(w, http.StatusBadRequest, "Invalid user or password")
 		return
 	}
@@ -150,7 +166,8 @@ func (a *App) auth(w http.ResponseWriter, r *http.Request) {
 	if err := uFetched.GetUserByUsername(a.DB); err != nil {
 		log.Printf("No existe usuario en la DB")
 		bcrypt.CompareHashAndPassword([]byte(uFetched.Password), []byte("thereIsNoUser"))
-		log.Printf("POST %s code: %d", r.RequestURI, http.StatusBadRequest)
+		log.Printf("POST %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusBadRequest, err.Error())
 		respondWithError(w, http.StatusBadRequest, "Invalid user or password")
 		return
 	}
@@ -158,24 +175,30 @@ func (a *App) auth(w http.ResponseWriter, r *http.Request) {
 	if err := bcrypt.CompareHashAndPassword([]byte(uFetched.Password), []byte(u.Password)); err != nil {
 		// Invalid password
 		log.Printf("Password invalida")
-		log.Printf("POST %s code: %d", r.RequestURI, http.StatusBadRequest)
+		log.Printf("POST %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusBadRequest, err.Error())
 		respondWithError(w, http.StatusBadRequest, "Invalid user or password")
 		return
 	} else {
 		token, err := uFetched.GetJWTForUser()
 		if err != nil {
 			// error inesperado loggeado en la capa de modelo
-			log.Printf("POST %s code: %d", r.RequestURI, http.StatusBadRequest)
+			log.Printf("POST %s code: %d ERROR: %s", r.RequestURI,
+				http.StatusBadRequest, err.Error())
 			respondWithError(w, http.StatusBadRequest, "Invalid user or password")
+			return
 		}
 
 		log.Printf("POST %s code: %d", r.RequestURI, http.StatusOK)
 		respondWithJSON(w, http.StatusOK, token)
+		return
 	}
 }
 
 func (a *App) refresh(w http.ResponseWriter, r *http.Request) {
 	if r.Header["Refresh"] == nil {
+		log.Printf("POST %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusOK, "Cabecera no contiene 'Refresh' token")
 		respondWithError(w, http.StatusBadRequest, "")
 		return
 	}
@@ -184,9 +207,13 @@ func (a *App) refresh(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
+			log.Printf("GET %s code: %d ERROR: %s", r.RequestURI,
+				http.StatusBadRequest, err.Error())
 			respondWithError(w, http.StatusUnauthorized, err.Error())
 			return
 		}
+		log.Printf("GET %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusBadRequest, err.Error())
 		respondWithError(w, http.StatusBadRequest, "Token Expired")
 		return
 	}
@@ -233,7 +260,8 @@ func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handle
 			}
 			tkn, err := parseToken(r.Header["Authorization"][0])
 			if err != nil {
-				log.Printf("POST %s code: %d", r.RequestURI, http.StatusBadRequest)
+				log.Printf("POST %s code: %d ERROR: %s", r.RequestURI,
+					http.StatusBadRequest, err.Error())
 				respondWithError(w, http.StatusBadRequest, "Invalid user or password")
 			}
 

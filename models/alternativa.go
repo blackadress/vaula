@@ -25,7 +25,7 @@ func (a *Alternativa) CreateAlternativa(db *pgxpool.Pool) error {
 		`INSERT INTO alternativas(valor, correcto, activo, createdAt, updatedAt)
 		VALUES($1, $2, $3, $4, $5)
 		RETURNING id`,
-		a.Valor, a.Correcto, true, now, now,
+		a.Valor, a.Correcto, a.Activo, now, now,
 	).Scan(&a.ID)
 }
 
@@ -40,7 +40,7 @@ func (a *Alternativa) GetAlternativa(db *pgxpool.Pool) error {
 	).Scan(&a.Valor, &a.Correcto, &a.Activo, &a.CreatedAt, &a.UpdatedAt)
 }
 
-func (a *Alternativa) GetAlternativas(db *pgxpool.Pool) ([]Alternativa, error) {
+func GetAlternativas(db *pgxpool.Pool) ([]Alternativa, error) {
 	rows, err := db.Query(context.Background(),
 		`SELECT id, valor, correcto, activo, createdAt, updatedAt
 		FROM alternativas`)

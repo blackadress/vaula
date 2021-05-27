@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func TestEmptyAlternativaTable(t *testing.T) {
@@ -26,7 +27,7 @@ func TestEmptyAlternativaTable(t *testing.T) {
 	// checkResponseCode(t, http.StatusOK, response.Code)
 
 	body := response.Body.String()
-	if body != "" {
+	if body != "[]" {
 		t.Errorf("Se esperaba un array vacio. Se obtuvo %#v", body)
 	}
 }
@@ -47,9 +48,9 @@ func TestGetNonExistentAlternativa(t *testing.T) {
 
 	var m map[string]string
 	json.Unmarshal(response.Body.Bytes(), &m)
-	if m["error"] != "Alternativa not found" {
+	if m["error"] != "Alternativa no encontrada" {
 		t.Errorf(
-			"Se espera que la key 'error' sea 'Alternativa not found'. Got '%s'",
+			"Se espera que la key 'error' sea 'Alternativa no encontrada'. Got '%s'",
 			m["error"])
 	}
 }
@@ -59,21 +60,22 @@ func TestCreateAlternativa(t *testing.T) {
 	clearTableUsuario()
 	ensureAuthorizedUserExists()
 
-	var jsonStr = []byte(`
-	{
+	jsonStr := []byte(`{
 		"valor": "val_alt_test",
-		"correcto": true
+		"correcto": true,
+		"activo": true
 	}`)
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+	fmt.Printf("------------------------------\n")
+	fmt.Printf("token: %s\n", token_str)
 
-	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(jsonStr))
-	req.Header.Set("Content-Type", "application/json")
+	req, _ := http.NewRequest("POST", "/alternativas", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Authorization", token_str)
+
 	response := executeRequest(req, a)
 
-	response = executeRequest(req, a)
 	checkResponseCode(t, http.StatusCreated, response.Code)
 
 	var m map[string]interface{}
@@ -83,12 +85,12 @@ func TestCreateAlternativa(t *testing.T) {
 		t.Errorf("Expected user 'valor' to be 'val_alt_test'. Got '%v'", m["valor"])
 	}
 
-	if m["correcto"] == true {
-		t.Errorf("Expected 'correcto' to be 'true'. Got '%v'", m["correcto"])
+	if m["correcto"] == "true" {
+		t.Errorf("Expected 'correcto' to be 'true'. Got '%#v'", m["correcto"])
 	}
 
-	if m["activo"] == true {
-		t.Errorf("Expected 'activo' to be 'true'. Got '%v'", m["activo"])
+	if m["activo"] == "true" {
+		t.Errorf("Expected 'activo' to be 'true'. Got '%#v'", m["activo"])
 	}
 
 	if m["id"] != 1.0 {
@@ -120,7 +122,7 @@ func TestUpdateAlternativa(t *testing.T) {
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/alternativas/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 	var originalAlternativa map[string]interface{}
@@ -128,9 +130,11 @@ func TestUpdateAlternativa(t *testing.T) {
 
 	var jsonStr = []byte(`{
 		"valor": "alt_test_updated",
-		"correcto": false}`)
+		"correcto": true,
+		"activo": false
+	}`)
 
-	req, _ = http.NewRequest("PUT", "/users/1", bytes.NewBuffer(jsonStr))
+	req, _ = http.NewRequest("PUT", "/alternativas/1", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", token_str)
 	response = executeRequest(req, a)
@@ -161,6 +165,25 @@ func TestUpdateAlternativa(t *testing.T) {
 			originalAlternativa["correcto"],
 		)
 	}
+
+	if m["activo"] == originalAlternativa["activo"] {
+		t.Errorf(
+			"Expected the activo to change from '%v' to '%v'. Got '%v'",
+			originalAlternativa["activo"],
+			m["activo"],
+			originalAlternativa["activo"],
+		)
+	}
+
+	if m["updatedAt"] == originalAlternativa["updatedAt"] {
+		t.Errorf(
+			"Expected the updatedAt to change from '%v' to '%v'. Got '%v'",
+			originalAlternativa["updatedAt"],
+			m["updatedAt"],
+			originalAlternativa["updatedAt"],
+		)
+	}
+
 }
 
 func TestDeleteAlternativa(t *testing.T) {
@@ -171,12 +194,12 @@ func TestDeleteAlternativa(t *testing.T) {
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/alternativas/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	req, _ = http.NewRequest("DELETE", "/users/1", nil)
+	req, _ = http.NewRequest("DELETE", "/alternativas/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response = executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
@@ -185,7 +208,7 @@ func TestDeleteAlternativa(t *testing.T) {
 const tableAlternativaCreationQuery = `
 CREATE TABLE IF NOT EXISTS alternativas
 	(
-		id INT PRIMARY KEY,
+		id SERIAL PRIMARY KEY,
 		valor VARCHAR(50) NOT NULL,
 		correcto BOOLEAN NOT NULL,
 
@@ -209,6 +232,7 @@ func clearTableAlternativa() {
 }
 
 func addAlternativas(count int) {
+	now := time.Now()
 	if count < 1 {
 		count = 1
 	}
@@ -216,10 +240,8 @@ func addAlternativas(count int) {
 	for i := 0; i < count; i++ {
 		a.DB.Exec(
 			context.Background(),
-			`INSERT INTO alternativas(valor, correcto, activo)
-			VALUES($1, $2, $3)`,
-			"valor_"+strconv.Itoa(i),
-			i%2 == 1,
-			true)
+			`INSERT INTO alternativas(valor, correcto, activo, createdAt, updatedAt)
+			VALUES($1, $2, $3, $4, $5)`,
+			"valor_"+strconv.Itoa(i), i%2 == 1, i%2 == 0, now, now)
 	}
 }
