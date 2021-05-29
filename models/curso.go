@@ -10,8 +10,8 @@ import (
 
 type Curso struct {
 	ID       int    `json:"id"`
-	Nombre   int    `json:"nombre"`
-	Siglas   int    `json:"siglas"`
+	Nombre   string `json:"nombre"`
+	Siglas   string `json:"siglas"`
 	Silabo   string `json:"silabo"`
 	Semestre string `json:"semestre"`
 
@@ -42,10 +42,10 @@ func (c *Curso) GetCurso(db *pgxpool.Pool) error {
 		&c.Activo, &c.CreatedAt, &c.UpdatedAt)
 }
 
-func getCursos(db *pgxpool.Pool) ([]Curso, error) {
+func GetCursos(db *pgxpool.Pool) ([]Curso, error) {
 	rows, err := db.Query(
 		context.Background(),
-		`SELECT siglas, nombre, silabo, semestre, activo, createdAt, updatedAt
+		`SELECT id, siglas, nombre, silabo, semestre, activo, createdAt, updatedAt
 		FROM cursos`)
 
 	if err != nil {
@@ -61,7 +61,8 @@ func getCursos(db *pgxpool.Pool) ([]Curso, error) {
 			&c.ID, &c.Siglas, &c.Nombre, &c.Silabo,
 			&c.Semestre, &c.Activo, &c.CreatedAt, &c.UpdatedAt)
 		if err != nil {
-			log.Println("Las filas obtenidas de la BD para Curso, no satisfacen a 'Scan'")
+			log.Printf("Las filas obtenidas de la BD para Curso, no satisfacen a 'Scan', %s",
+				err)
 			return nil, err
 		}
 		cursos = append(cursos, c)
@@ -74,7 +75,7 @@ func (c *Curso) UpdateCurso(db *pgxpool.Pool) error {
 	_, err := db.Exec(
 		context.Background(),
 		`UPDATE cursos SET siglas=$1, nombre=$2, silabo=$3, 
-		semestre=$4, activo=$5, updatedA=$6
+		semestre=$4, activo=$5, updatedAt=$6
 		WHERE id=$7`,
 		c.Siglas, c.Nombre, c.Silabo, c.Semestre, c.Activo, updTime, c.ID)
 

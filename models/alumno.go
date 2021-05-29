@@ -40,14 +40,14 @@ func (a *Alumno) GetAlumno(db *pgxpool.Pool) error {
 		FROM alumnos
 		WHERE id=$1`,
 		a.ID,
-	).Scan(&a.Nombres, &a.Apellidos, &a.Codigo, &a.UsuarioId, &a.CreatedAt, &a.UpdatedAt)
+	).Scan(&a.Nombres, &a.Apellidos, &a.Codigo, &a.Activo, &a.UsuarioId, &a.CreatedAt, &a.UpdatedAt)
 }
 
-func (a *Alumno) GetAlumnos(db *pgxpool.Pool) ([]Alumno, error) {
+func GetAlumnos(db *pgxpool.Pool) ([]Alumno, error) {
 	rows, err := db.Query(
 		context.Background(),
-		`SELECT nombres, apellidos, codigo, usuarioId, 
-		activo, createdAt, updatedAt
+		`SELECT id, nombres, apellidos, codigo,
+		usuarioId, activo, createdAt, updatedAt
 		FROM alumnos`)
 
 	if err != nil {
@@ -79,7 +79,7 @@ func (a *Alumno) UpdateAlumno(db *pgxpool.Pool) error {
 		usuarioId=$4, activo=$5, updatedAt=$6
 		WHERE id=$7`,
 		a.Nombres, a.Apellidos, a.Codigo,
-		a.Activo, a.UsuarioId, now, a.ID,
+		a.UsuarioId, a.Activo, now, a.ID,
 	)
 
 	return err
@@ -151,7 +151,8 @@ func (ac *AlumnoCurso) GetAlumnoCursos(db *pgxpool.Pool) ([]AlumnoCurso, error) 
 			&ac.ID, &ac.Calificacion, &ac.FechaInicio, &ac.FechaFinal,
 			&ac.AlumnoId, &ac.CreatedAt, &ac.UpdatedAt)
 		if err != nil {
-			log.Println("Las filas obtenidas de la BD para Alumno Curso, no satisfacen a 'Scan'")
+			log.Printf("Las filas obtenidas de la BD para Alumno Curso, no satisfacen a 'Scan' %s",
+				err)
 			return nil, err
 		}
 		alumnoCursos = append(alumnoCursos, ac)
@@ -238,7 +239,8 @@ func (ae *AlumnoExamen) GetAlumnoExamenes(db *pgxpool.Pool) ([]AlumnoExamen, err
 			&ae.ID, &ae.Calificacion, &ae.FechaInicio, &ae.FechaFinal,
 			&ae.AlumnoId, &ae.CreatedAt, &ae.UpdatedAt)
 		if err != nil {
-			log.Println("Las filas obtenidas de la BD para Alumno Curso, no satisfacen a 'Scan'")
+			log.Printf("Las filas obtenidas de la BD para Alumno Curso, no satisfacen a 'Scan', %s",
+				err)
 			return nil, err
 		}
 		alumnoExamens = append(alumnoExamens, ae)
@@ -327,7 +329,8 @@ func (at *AlumnoTrabajo) GetAlumnoTrabajoes(db *pgxpool.Pool) ([]AlumnoTrabajo, 
 			&at.ID, &at.Calificacion, &at.Uri, &at.FechaInicio,
 			&at.FechaFinal, &at.AlumnoId, &at.CreatedAt, &at.UpdatedAt)
 		if err != nil {
-			log.Println("Las filas obtenidas de la BD para Alumno Curso, no satisfacen a 'Scan'")
+			log.Printf("Las filas obtenidas de la BD para Alumno Curso, no satisfacen a 'Scan' %s",
+		err)
 			return nil, err
 		}
 		alumnoTrabajos = append(alumnoTrabajos, at)

@@ -56,7 +56,8 @@ func GetPreguntasTrabajo(db *pgxpool.Pool) ([]PreguntaTrabajo, error) {
 			&pt.ID, &pt.Enunciado, &pt.TrabajoId,
 			&pt.Activo, &pt.CreatedAt, &pt.UpdatedAt)
 		if err != nil {
-			log.Println("Las filas obtenidas de la BD para PreguntaTrabajo, no satisfacen a 'Scan'")
+			log.Printf("Las filas obtenidas de la BD para PreguntaTrabajo, no satisfacen a 'Scan' %s",
+				err)
 			return nil, err
 		}
 		preguntasTrabajo = append(preguntasTrabajo, pt)

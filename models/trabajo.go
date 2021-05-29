@@ -64,7 +64,8 @@ func GetTrabajos(db *pgxpool.Pool) ([]Trabajo, error) {
 			&tra.Activo, &tra.FechaInicio, &tra.FechaFinal,
 			&tra.CreatedAt, &tra.UpdatedAt)
 		if err != nil {
-			log.Println("Las filas obtenidas de la BD para Trabajo, no satisfacen a 'Scan'")
+			log.Printf("Las filas obtenidas de la BD para Trabajo, no satisfacen a 'Scan' %s",
+				err)
 			return nil, err
 		}
 		trabajos = append(trabajos, tra)

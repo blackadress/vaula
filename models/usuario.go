@@ -106,7 +106,7 @@ func GetUsers(db *pgxpool.Pool) ([]User, error) {
 			&u.ID, &u.Username, &u.Email,
 			&u.Activo, &u.CreatedAt, &u.UpdatedAt)
 		if err != nil {
-			log.Println("The rows we got from the DB can't be 'Scan'(ed)")
+			log.Printf("The rows we got from the DB can't be 'Scan'(ed) %s", err)
 			return nil, err
 		}
 		users = append(users, u)

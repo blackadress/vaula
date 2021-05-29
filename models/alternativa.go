@@ -56,7 +56,8 @@ func GetAlternativas(db *pgxpool.Pool) ([]Alternativa, error) {
 		err := rows.Scan(
 			&a.ID, &a.Valor, &a.Correcto, &a.Activo, &a.CreatedAt, &a.UpdatedAt)
 		if err != nil {
-			log.Println("Las filas obtenidas de la BD para Alternativa, no satisfacen a 'Scan'")
+			log.Printf("Las filas obtenidas de la BD para Alternativa, no satisfacen a 'Scan' %s",
+				err)
 			return nil, err
 		}
 		alternativas = append(alternativas, a)

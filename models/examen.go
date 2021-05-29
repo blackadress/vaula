@@ -64,7 +64,8 @@ func GetExamenes(db *pgxpool.Pool) ([]Examen, error) {
 			&e.ID, &e.Nombre, &e.FechaInicio, &e.FechaFinal, &e.CursoId,
 			&e.Activo, &e.CreatedAt, &e.UpdatedAt)
 		if err != nil {
-			log.Println("Las filas obtenidas de la BD para Examen, no satisfacen a 'Scan'")
+			log.Printf("Las filas obtenidas de la BD para Examen, no satisfacen a 'Scan' %s",
+				err)
 			return nil, err
 		}
 		examenes = append(examenes, e)

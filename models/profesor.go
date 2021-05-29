@@ -61,7 +61,8 @@ func GetProfesores(db *pgxpool.Pool) ([]Profesor, error) {
 			&prof.ID, &prof.Nombres, &prof.Apellidos,
 			&prof.UsuarioId, &prof.Activo, &prof.CreatedAt, &prof.UpdatedAt)
 		if err != nil {
-			log.Println("Las filas obtenidas de la BD para Profesor, no satisfacen a 'Scan'")
+			log.Printf("Las filas obtenidas de la BD para Profesor, no satisfacen a 'Scan' %s",
+				err)
 			return nil, err
 		}
 		profesores = append(profesores, prof)
@@ -91,4 +92,3 @@ func (p *Profesor) DeleteProfesor(db *pgxpool.Pool) error {
 
 	return err
 }
-
