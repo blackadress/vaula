@@ -47,9 +47,9 @@ func TestGetNonExistentExamen(t *testing.T) {
 
 	var m map[string]string
 	json.Unmarshal(response.Body.Bytes(), &m)
-	if m["error"] != "Examen not found" {
+	if m["error"] != "Examen no encontrado" {
 		t.Errorf(
-			"Se espera que la key 'error' sea 'Examen not found'. Got '%s'",
+			"Se espera que la key 'error' sea 'Examen no encontrado'. Got '%s'",
 			m["error"])
 	}
 }

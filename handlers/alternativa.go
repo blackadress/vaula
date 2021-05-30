@@ -44,7 +44,7 @@ func (a *App) getAlternativaByIdHandler(w http.ResponseWriter, r *http.Request) 
 func (a *App) getAlternativasHandler(w http.ResponseWriter, r *http.Request) {
 	alternativas, err := models.GetAlternativas(a.DB)
 	if err != nil {
-		log.Printf("GET %s code: %d ERROR: %s", r.RequestURI,
+		log.Printf("GET %s code: %d ERROR: %s -- no se obtuvieron alternativas", r.RequestURI,
 			http.StatusInternalServerError, err.Error())
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -58,7 +58,6 @@ func (a *App) getAlternativasHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) createAlternativaHandler(w http.ResponseWriter, r *http.Request) {
 	var alt models.Alternativa
-	log.Printf("body: %#v", r.Body)
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&alt)
 	if err != nil {
@@ -88,7 +87,7 @@ func (a *App) updateAlternativaHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		log.Printf("PUT %s code: %d ERROR: %s", r.RequestURI,
+		log.Printf("PUT %s code: %d ERROR: %s -- strconv", r.RequestURI,
 			http.StatusBadRequest, err.Error())
 		respondWithError(w, http.StatusBadRequest, "ID de Alternativa invalido")
 		return
@@ -98,7 +97,7 @@ func (a *App) updateAlternativaHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err = decoder.Decode(&alt)
 	if err != nil {
-		log.Printf("PUT %s code: %d ERROR: %s", r.RequestURI,
+		log.Printf("PUT %s code: %d ERROR: %s -- decoder", r.RequestURI,
 			http.StatusBadRequest, err.Error())
 		respondWithError(w, http.StatusBadRequest, "Invalid payload")
 		return
@@ -108,7 +107,7 @@ func (a *App) updateAlternativaHandler(w http.ResponseWriter, r *http.Request) {
 	alt.ID = id
 	err = alt.UpdateAlternativa(a.DB)
 	if err != nil {
-		log.Printf("PUT %s code: %d ERROR: %s", r.RequestURI,
+		log.Printf("PUT %s code: %d ERROR: %s -- alternativa.UpdateAlternativa", r.RequestURI,
 			http.StatusInternalServerError, err.Error())
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -123,20 +122,21 @@ func (a *App) deleteAlternativaHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		log.Printf("DELETE %s code: %d ERROR: %s", r.RequestURI,
+		log.Printf("DELETE %s code: %d ERROR: %s -- strconv", r.RequestURI,
 			http.StatusBadRequest, err.Error())
-		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
+		respondWithError(w, http.StatusBadRequest, "ID de alternativa invalido")
 		return
 	}
 
 	alt := models.Alternativa{ID: id}
 	if err := alt.DeleteAlternativa(a.DB); err != nil {
-		log.Printf("DELETE %s code: %d ERROR: %s", r.RequestURI,
+		log.Printf("DELETE %s code: %d ERROR: %s -- alternativa.DeleteAlternativa", r.RequestURI,
 			http.StatusInternalServerError, err.Error())
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
+	log.Printf("DELETE %s code: %d", r.RequestURI, http.StatusOK)
 	respondWithJSON(w, http.StatusOK, map[string]int{"exito": 1, "id": alt.ID})
 	return
 }

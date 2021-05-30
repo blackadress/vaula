@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func TestEmptyUsuarioTable(t *testing.T) {
@@ -139,7 +140,7 @@ func TestUpdateUser(t *testing.T) {
 
 	if m["username"] == originalUser["username"] {
 		t.Errorf(
-			"Expected the username to change from '%v' to '%v'. Got '%v'",
+			"Expected the username to change from '%s' to '%s'. Got '%v'",
 			originalUser["username"],
 			m["username"],
 			originalUser["username"],
@@ -148,7 +149,7 @@ func TestUpdateUser(t *testing.T) {
 
 	if m["password"] == originalUser["password"] {
 		t.Errorf(
-			"Expected the password to change from '%v' to '%v'. Got '%v'",
+			"Expected the password to change from '%s' to '%s'. Got '%v'",
 			originalUser["password"],
 			m["password"],
 			originalUser["password"],
@@ -157,7 +158,7 @@ func TestUpdateUser(t *testing.T) {
 
 	if m["email"] == originalUser["email"] {
 		t.Errorf(
-			"Expected the email to change from '%v', to '%v'. Got '%v'",
+			"Expected the email to change from '%s', to '%s'. Got '%v'",
 			originalUser["email"],
 			m["email"],
 			originalUser["email"],
@@ -205,11 +206,6 @@ CREATE TABLE IF NOT EXISTS usuarios
 	)
 `
 
-const userInsertionQuery = `
-	INSERT INTO users(username, password, email)
-	VALUES('prueba', 'prueba', 'prueba@mail.com')
-`
-
 func ensureTableUsuarioExists() {
 	if _, err := a.DB.Exec(context.Background(), tableCreationQuery); err != nil {
 		log.Printf("TEST: error creando tabla de usuarios: %s", err)
@@ -222,6 +218,7 @@ func clearTableUsuario() {
 }
 
 func addUsers(count int) {
+	now := time.Now()
 	if count < 1 {
 		count = 1
 	}
@@ -229,11 +226,12 @@ func addUsers(count int) {
 	for i := 0; i < count; i++ {
 		a.DB.Exec(
 			context.Background(),
-			`INSERT INTO users(username, password, email)
-			VALUES($1, $2, $3)`,
+			`INSERT INTO usuarios(username, password, email, activo, createdAt, updatedAt)
+			VALUES($1, $2, $3, $4, $5, $6)`,
 			"user_"+strconv.Itoa(i),
 			"pass"+strconv.Itoa(i),
 			"em"+strconv.Itoa(i)+"@test.ts",
+			i%2 == 0, now, now,
 		)
 	}
 }

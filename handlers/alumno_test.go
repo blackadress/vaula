@@ -27,7 +27,7 @@ func TestEmptyAlumnoTable(t *testing.T) {
 	checkResponseCode(t, http.StatusOK, response.Code)
 
 	body := response.Body.String()
-	if body != "" {
+	if body != "[]" {
 		t.Errorf("Se esperaba un array vacio. Se obtuvo %#v", body)
 	}
 }
@@ -48,9 +48,9 @@ func TestGetNonExistentAlumno(t *testing.T) {
 
 	var m map[string]string
 	json.Unmarshal(response.Body.Bytes(), &m)
-	if m["error"] != "Alumno not found" {
+	if m["error"] != "Alumno no encontrado" {
 		t.Errorf(
-			"Se espera que la key 'error' sea 'Alumno not found'. Got '%s'",
+			"Se espera que la key 'error' sea 'Alumno no encontrado'. Got '%s'",
 			m["error"])
 	}
 }
@@ -216,34 +216,6 @@ func TestDeleteAlumno(t *testing.T) {
 	checkResponseCode(t, http.StatusOK, response.Code)
 }
 
-const tableAlumnoCreationQuery = `
-CREATE TABLE IF NOT EXISTS alumnos
-	(
-		id INT PRIMARY KEY,
-		apellidos VARCHAR(200) NOT NULL,
-		nombres VARCHAR(200) NOT NULL,
-		codigo CHAR(8) NOT NULL,
-		usuarioId INT REFERENCES usuarios(id)
-
-		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ,
-		updatedAt TIMESTAMPTZ
-	)
-`
-
-// es posible hacer decouple de `a.DB`?
-func ensureTableAlumnoExists() {
-	_, err := a.DB.Exec(context.Background(), tableAlumnoCreationQuery)
-	if err != nil {
-		log.Printf("TEST: error creando tabla alumnos: %s", err)
-	}
-}
-
-func clearTableAlumno() {
-	a.DB.Exec(context.Background(), "DELETE FROM alumnos")
-	a.DB.Exec(context.Background(), "ALTER SEQUENCE alumnos_id_seq RESTART WITH 1")
-}
-
 func addAlumnos(count int) {
 	clearTableUsuario()
 	addUsers(count)
@@ -264,4 +236,32 @@ func addAlumnos(count int) {
 			"nom_test_"+strconv.Itoa(i),
 			codigo, i+1, i%2 == 0, now, now)
 	}
+}
+
+const tableAlumnoCreationQuery = `
+CREATE TABLE IF NOT EXISTS alumnos
+	(
+		id SERIAL PRIMARY KEY,
+		apellidos VARCHAR(200) NOT NULL,
+		nombres VARCHAR(200) NOT NULL,
+		codigo CHAR(8) NOT NULL,
+		usuarioId INT REFERENCES usuarios(id),
+
+		activo BOOLEAN NOT NULL,
+		createdAt TIMESTAMPTZ,
+		updatedAt TIMESTAMPTZ
+	)
+`
+
+// es posible hacer decouple de `a.DB`?
+func ensureTableAlumnoExists() {
+	_, err := a.DB.Exec(context.Background(), tableAlumnoCreationQuery)
+	if err != nil {
+		log.Printf("TEST: error creando tabla alumnos: %s", err)
+	}
+}
+
+func clearTableAlumno() {
+	a.DB.Exec(context.Background(), "DELETE FROM alumnos")
+	a.DB.Exec(context.Background(), "ALTER SEQUENCE alumnos_id_seq RESTART WITH 1")
 }

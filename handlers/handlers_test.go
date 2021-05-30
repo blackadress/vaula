@@ -31,6 +31,7 @@ func TestMain(m *testing.M) {
 	// asegurarse de que todas las tablas existen
 	ensureTableUsuarioExists()
 	ensureTableAlternativaExists()
+	ensureTableAlumnoExists()
 	ensureTableCursoExists()
 	ensureTableExamenExists()
 	ensureTablePreguntaExists()
@@ -42,6 +43,7 @@ func TestMain(m *testing.M) {
 	// limpiar las tablas de la BD
 	clearTableUsuario()
 	clearTableAlternativa()
+	clearTableAlumno()
 	clearTableCurso()
 	clearTableExamen()
 	clearTablePregunta()
@@ -98,7 +100,7 @@ func ensureAuthorizedUserExists() {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalf("Algo inesperado paso %s", err)
+		log.Fatalf("Algo inesperado paso %s, probablemente el servidor no este activo", err)
 	}
 
 	resp.Body.Close()

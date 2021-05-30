@@ -50,9 +50,9 @@ func TestGetNonExistentTrabajo(t *testing.T) {
 
 	var m map[string]string
 	json.Unmarshal(response.Body.Bytes(), &m)
-	if m["error"] != "Trabajo not found" {
+	if m["error"] != "Trabajo no encontrado" {
 		t.Errorf(
-			"Se espera que la key 'error' sea 'Trabajo not found'. Got '%s'",
+			"Se espera que la key 'error' sea 'Trabajo no encontrado'. Got '%s'",
 			m["error"])
 	}
 }
