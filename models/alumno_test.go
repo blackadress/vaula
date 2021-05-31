@@ -185,8 +185,14 @@ func EnsureTableAlumnoExists(db *pgxpool.Pool) {
 }
 
 func ClearTableAlumno(db *pgxpool.Pool) {
-	db.Exec(context.Background(), "DELETE FROM alumnos")
-	db.Exec(context.Background(), "ALTER SEQUENCE alumnos_id_seq RESTART WITH 1")
+	_, err := db.Exec(context.Background(), "DELETE FROM alumnos")
+	if err != nil {
+		log.Printf("Error deleteando contenidos de la tabla alumno %s", err)
+	}
+	_, err = db.Exec(context.Background(), "ALTER SEQUENCE alumnos_id_seq RESTART WITH 1")
+	if err != nil {
+		log.Printf("Error reseteando secuencia de alumno_id %s", err)
+	}
 }
 
 func AddAlumnos(count int, db *pgxpool.Pool) {
@@ -222,8 +228,8 @@ CREATE TABLE IF NOT EXISTS usuarios
 		email TEXT NOT NULL,
 
 		activo BOOLEAN,
-		createdAt TIMESTAMPTZ,
-		updatedAt TIMESTAMPTZ
+		createdAt TIMESTAMPTZ NOT NULL,
+		updatedAt TIMESTAMPTZ NOT NULL
 	)
 `
 
@@ -234,8 +240,14 @@ func EnsureTableUsuarioExists(db *pgxpool.Pool) {
 }
 
 func ClearTableUsuario(db *pgxpool.Pool) {
-	db.Exec(context.Background(), "DELETE FROM usuarios")
-	db.Exec(context.Background(), "ALTER SEQUENCE usuarios_id_seq RESTART WITH 1")
+	_, err := db.Exec(context.Background(), "DELETE FROM usuarios")
+	if err != nil {
+		log.Printf("Error deleteando contenidos de la tabla usuarios %s", err)
+	}
+	_, err = db.Exec(context.Background(), "ALTER SEQUENCE usuarios_id_seq RESTART WITH 1")
+	if err != nil {
+		log.Printf("Error alterando secuencia de usuario_id %s", err)
+	}
 }
 
 func AddUsers(count int, db *pgxpool.Pool) {

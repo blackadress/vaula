@@ -36,13 +36,13 @@ func (e *Examen) CreateExamen(db *pgxpool.Pool) error {
 func (e *Examen) GetExamen(db *pgxpool.Pool) error {
 	return db.QueryRow(
 		context.Background(),
-		`SELECT nombre, fechaInicio, fechaFinal, cursoId,
-		activo, createdAt, updatedAt
+		`SELECT nombre, fechaInicio, fechaFinal,
+		cursoId, activo, createdAt, updatedAt
 		FROM examenes
 		WHERE id=$1`,
 		e.ID,
 	).Scan(&e.Nombre, &e.FechaInicio, &e.FechaFinal,
-		&e.CursoId, e.Activo, e.CreatedAt, e.UpdatedAt)
+		&e.CursoId, &e.Activo, &e.CreatedAt, &e.UpdatedAt)
 }
 
 func GetExamenes(db *pgxpool.Pool) ([]Examen, error) {

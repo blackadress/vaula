@@ -33,13 +33,17 @@ func TestMain(m *testing.M) {
 
 	EnsureTableUsuarioExists(db)
 	EnsureTableAlumnoExists(db)
+	EnsureTableExamenExists(db)
 	EnsureTableCursoExists(db)
+	EnsureTablePreguntaExists(db)
 
 	code := m.Run()
 
-	// ClearTableAlumno(db)
-	// ClearTableUsuario(db)
-	// ClearTableCurso(db)
+	ClearTableAlumno(db)
+	ClearTableUsuario(db)
+	ClearTableCurso(db)
+	// ClearTableExamen(db)
+	// ClearTablePregunta(db)
 	os.Exit(code)
 
 }

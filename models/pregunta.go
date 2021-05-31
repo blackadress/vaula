@@ -26,7 +26,7 @@ func (p *Pregunta) CreatePregunta(db *pgxpool.Pool) error {
 		`INSERT INTO preguntas(enunciado, examenId, activo, createdAt, updatedAt)
 		VALUES($1, $2, $3, $4, $5)
 		RETURNING id`,
-		p.Enunciado, p.ExamenId, true, now, now).Scan(&p.ID)
+		p.Enunciado, p.ExamenId, p.Activo, now, now).Scan(&p.ID)
 }
 
 func (p *Pregunta) GetPregunta(db *pgxpool.Pool) error {
@@ -70,9 +70,9 @@ func (p *Pregunta) UpdatePregunta(db *pgxpool.Pool) error {
 	_, err := db.Exec(
 		context.Background(),
 		`UPDATE preguntas SET enunciado=$1, examenId=$2,
-		activo=$3, createdAt=$4, updatedAt=$5
-		WHERE id=$6`,
-		p.Enunciado, p.ExamenId, p.Activo, p.CreatedAt, updTime)
+		activo=$3, updatedAt=$4
+		WHERE id=$5`,
+		p.Enunciado, p.ExamenId, p.Activo, updTime, p.ID)
 
 	return err
 }

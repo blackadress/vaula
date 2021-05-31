@@ -169,8 +169,8 @@ CREATE TABLE IF NOT EXISTS cursos
 		semestre VARCHAR(20) NOT NULL,
 
 		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ,
-		updatedAt TIMESTAMPTZ
+		createdAt TIMESTAMPTZ NOT NULL,
+		updatedAt TIMESTAMPTZ NOT NULL
 	)
 `
 
@@ -182,8 +182,17 @@ func EnsureTableCursoExists(db *pgxpool.Pool) {
 }
 
 func ClearTableCurso(db *pgxpool.Pool) {
-	db.Exec(context.Background(), "DELETE FROM cursos")
-	db.Exec(context.Background(), "ALTER SEQUENCE cursos_id_seq RESTART WITH 1")
+	ClearTablePregunta(db)
+	ClearTableExamen(db)
+	_, err := db.Exec(context.Background(), "DELETE FROM cursos")
+	if err != nil {
+		log.Printf("Error deleteando tabla %s", err)
+	}
+	_, err = db.Exec(context.Background(), "ALTER SEQUENCE cursos_id_seq RESTART WITH 1")
+	if err != nil {
+		log.Printf("Error alterando secuencia de curso_id %s", err)
+	}
+
 }
 
 func AddCursos(count int, db *pgxpool.Pool) {
