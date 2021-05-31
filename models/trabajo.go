@@ -34,7 +34,7 @@ func (t *Trabajo) CreateTrabajo(db *pgxpool.Pool) error {
 		t.FechaFinal, now, now).Scan(&t.ID)
 }
 
-func (t *Trabajo) GetProfesor(db *pgxpool.Pool) error {
+func (t *Trabajo) GetTrabajo(db *pgxpool.Pool) error {
 	return db.QueryRow(
 		context.Background(),
 		`SELECT descripcion, cursoId, activo, fechaInicio,
@@ -83,7 +83,7 @@ func (t *Trabajo) UpdateTrabajo(db *pgxpool.Pool) error {
 		fechaInicio=$4, fechaFinal=$5, updatedAt=$6
 		WHERE id=$7`,
 		t.Descripcion, t.CursoId, t.Activo, t.FechaInicio,
-		t.FechaFinal, updTime)
+		t.FechaFinal, updTime, t.ID)
 
 	return err
 }

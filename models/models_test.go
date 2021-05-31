@@ -36,6 +36,7 @@ func TestMain(m *testing.M) {
 	EnsureTableExamenExists(db)
 	EnsureTableCursoExists(db)
 	EnsureTablePreguntaExists(db)
+	EnsureTableTrabajoExists(db)
 
 	code := m.Run()
 

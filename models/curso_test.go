@@ -183,6 +183,7 @@ func EnsureTableCursoExists(db *pgxpool.Pool) {
 
 func ClearTableCurso(db *pgxpool.Pool) {
 	ClearTablePregunta(db)
+	ClearTableTrabajo(db)
 	ClearTableExamen(db)
 	_, err := db.Exec(context.Background(), "DELETE FROM cursos")
 	if err != nil {
