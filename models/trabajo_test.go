@@ -1,19 +1,16 @@
 package models
 
 import (
-	"context"
-	"log"
-	"strconv"
 	"testing"
 	"time"
 
+	"github.com/blackadress/vaula/utils"
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func TestCreateTrabajo(t *testing.T) {
-	ClearTableCurso(db) // limpia la tabla trabajos tambien
-	AddCursos(1, db)
+	utils.ClearTableCurso(db) // limpia la tabla trabajos tambien
+	utils.AddCursos(1, db)
 
 	loc, _ := time.LoadLocation("America/Lima")
 	fechaInicio := time.Date(2021, time.June,
@@ -39,8 +36,8 @@ func TestCreateTrabajo(t *testing.T) {
 }
 
 func TestGetTrabajo(t *testing.T) {
-	ClearTableCurso(db) // limpia la tabla trabajos tambien
-	AddTrabajos(1, db)
+	utils.ClearTableCurso(db) // limpia la tabla trabajos tambien
+	utils.AddTrabajos(1, db)
 
 	tra := Trabajo{ID: 1}
 	err := tra.GetTrabajo(db)
@@ -51,7 +48,7 @@ func TestGetTrabajo(t *testing.T) {
 }
 
 func TestNotGetTrabajo(t *testing.T) {
-	ClearTableTrabajo(db)
+	utils.ClearTableTrabajo(db)
 	tra := Trabajo{ID: 1}
 	err := tra.GetTrabajo(db)
 	if err != pgx.ErrNoRows {
@@ -60,8 +57,8 @@ func TestNotGetTrabajo(t *testing.T) {
 }
 
 func TestGetTrabajos(t *testing.T) {
-	ClearTableTrabajo(db)
-	AddTrabajos(2, db)
+	utils.ClearTableTrabajo(db)
+	utils.AddTrabajos(2, db)
 	trabajos, err := GetTrabajos(db)
 	if err != nil {
 		t.Errorf("algo salio mal con la comunicacion con la DB %s", err)
@@ -74,7 +71,7 @@ func TestGetTrabajos(t *testing.T) {
 }
 
 func TestGetZeroTrabajos(t *testing.T) {
-	ClearTableTrabajo(db)
+	utils.ClearTableTrabajo(db)
 
 	trabajos, err := GetTrabajos(db)
 	if err != nil {
@@ -87,9 +84,9 @@ func TestGetZeroTrabajos(t *testing.T) {
 }
 
 func TestUpdateTrabajo(t *testing.T) {
-	ClearTableCurso(db)
-	AddTrabajos(1, db)
-	AddCursos(1, db)
+	utils.ClearTableCurso(db)
+	utils.AddTrabajos(1, db)
+	utils.AddCursos(1, db)
 
 	original_tra := Trabajo{ID: 1}
 	err := original_tra.GetTrabajo(db)
@@ -163,74 +160,12 @@ func TestUpdateTrabajo(t *testing.T) {
 }
 
 func TestDeleteTrabajo(t *testing.T) {
-	ClearTableTrabajo(db)
-	AddTrabajos(1, db)
+	utils.ClearTableTrabajo(db)
+	utils.AddTrabajos(1, db)
 
 	tra := Trabajo{ID: 1}
 	err := tra.DeleteTrabajo(db)
 	if err != nil {
 		t.Errorf("Ocurrio un error en el metodo DeleteTrabajo")
-	}
-}
-
-const tableTrabajoCreationQuery = `
-CREATE TABLE IF NOT EXISTS trabajos
-	(
-		id SERIAL PRIMARY KEY,
-		descripcion TEXT NOT NULL,
-		fechaInicio TIMESTAMPTZ NOT NULL,
-		fechaFinal TIMESTAMPTZ NOT NULL,
-		cursoId INT REFERENCES cursos(id),
-
-		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ NOT NULL,
-		updatedAt TIMESTAMPTZ NOT NULL
-	)
-`
-
-func EnsureTableTrabajoExists(db *pgxpool.Pool) {
-	_, err := db.Exec(context.Background(), tableTrabajoCreationQuery)
-	if err != nil {
-		log.Printf("TEST: error creando tabla trabajos: %s", err)
-	}
-}
-
-func ClearTableTrabajo(db *pgxpool.Pool) {
-	_, err := db.Exec(context.Background(), "DELETE FROM trabajos")
-	if err != nil {
-		log.Printf("Error deleteando contenidos de la tabla Trabajo %s", err)
-	}
-	_, err = db.Exec(context.Background(), "ALTER SEQUENCE trabajos_id_seq RESTART WITH 1")
-	if err != nil {
-		log.Printf("Error reseteando secuencia de trabajo_id %s", err)
-	}
-
-}
-
-func AddTrabajos(count int, db *pgxpool.Pool) {
-	AddCursos(count, db)
-	if count < 1 {
-		count = 1
-	}
-	now := time.Now()
-	loc, _ := time.LoadLocation("America/Lima")
-	fechaInicio := time.Date(2022, time.June,
-		20, 18, 0, 0, 0, loc)
-	fechaFinal := time.Date(2022, time.June,
-		22, 18, 0, 0, 0, loc)
-
-	for i := 0; i < count; i++ {
-		_, err := db.Exec(
-			context.Background(),
-			`INSERT INTO trabajos(descripcion, fechaInicio, fechaFinal,
-				cursoId, activo, createdAt, updatedAt)
-			VALUES($1, $2, $3, $4, $5, $6, $7)`,
-			"trabajo_test_"+strconv.Itoa(i),
-			fechaInicio, fechaFinal,
-			i+1, i%2 == 0, now, now)
-
-		if err != nil {
-			log.Printf("Error adding trabajos %s", err)
-		}
 	}
 }

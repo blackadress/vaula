@@ -1,20 +1,16 @@
 package models
 
 import (
-	"context"
-	"log"
-	"strconv"
 	"testing"
-	"time"
 
+	"github.com/blackadress/vaula/utils"
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func TestCreateProfesor(t *testing.T) {
-	ClearTableUsuario(db)
-	ClearTableProfesor(db)
-	AddUsers(1, db)
+	utils.ClearTableUsuario(db)
+	utils.ClearTableProfesor(db)
+	utils.AddUsers(1, db)
 
 	al := Profesor{
 		Nombres:   "nom_pro prueba",
@@ -33,8 +29,8 @@ func TestCreateProfesor(t *testing.T) {
 }
 
 func TestGetProfesor(t *testing.T) {
-	ClearTableProfesor(db)
-	AddProfesores(1, db)
+	utils.ClearTableProfesor(db)
+	utils.AddProfesores(1, db)
 	al := Profesor{ID: 1}
 	err := al.GetProfesor(db)
 
@@ -44,7 +40,7 @@ func TestGetProfesor(t *testing.T) {
 }
 
 func TestNotGetProfesor(t *testing.T) {
-	ClearTableProfesor(db)
+	utils.ClearTableProfesor(db)
 	al := Profesor{ID: 1}
 	err := al.GetProfesor(db)
 	if err != pgx.ErrNoRows {
@@ -53,8 +49,8 @@ func TestNotGetProfesor(t *testing.T) {
 }
 
 func TestGetProfesors(t *testing.T) {
-	ClearTableProfesor(db)
-	AddProfesores(2, db)
+	utils.ClearTableProfesor(db)
+	utils.AddProfesores(2, db)
 	profesores, err := GetProfesores(db)
 	if err != nil {
 		t.Errorf("Algo salio mal con la comunicacion con la DB %s", err)
@@ -66,7 +62,7 @@ func TestGetProfesors(t *testing.T) {
 }
 
 func TestGetZeroProfesores(t *testing.T) {
-	ClearTableProfesor(db)
+	utils.ClearTableProfesor(db)
 
 	profesores, err := GetProfesores(db)
 	if err != nil {
@@ -79,10 +75,10 @@ func TestGetZeroProfesores(t *testing.T) {
 }
 
 func TestUpdateProfesor(t *testing.T) {
-	ClearTableProfesor(db)
-	ClearTableUsuario(db)
-	AddProfesores(1, db)
-	AddUsers(1, db)
+	utils.ClearTableProfesor(db)
+	utils.ClearTableUsuario(db)
+	utils.AddProfesores(1, db)
+	utils.AddUsers(1, db)
 
 	original_prof := Profesor{ID: 1}
 	err := original_prof.GetProfesor(db)
@@ -144,65 +140,12 @@ func TestUpdateProfesor(t *testing.T) {
 }
 
 func TestDeleteProfesor(t *testing.T) {
-	ClearTableProfesor(db)
-	AddProfesores(1, db)
+	utils.ClearTableProfesor(db)
+	utils.AddProfesores(1, db)
 
 	al := Profesor{ID: 1}
 	err := al.DeleteProfesor(db)
 	if err != nil {
 		t.Errorf("Ocurrio un error en el metodo DeleteProfesor")
-	}
-}
-
-const tableProfesorCreationQuery = `
-CREATE TABLE IF NOT EXISTS profesores
-	(
-		id SERIAL PRIMARY KEY,
-		apellidos VARCHAR(200) NOT NULL,
-		nombres VARCHAR(200) NOT NULL,
-		usuarioId INT REFERENCES usuarios(id),
-
-		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ NOT NULL,
-		updatedAt TIMESTAMPTZ NOT NULL
-	)
-`
-
-func EnsureTableProfesorExists(db *pgxpool.Pool) {
-	_, err := db.Exec(context.Background(), tableProfesorCreationQuery)
-	if err != nil {
-		log.Printf("TEST: error creando tabla profesores: %s", err)
-	}
-}
-
-func ClearTableProfesor(db *pgxpool.Pool) {
-	_, err := db.Exec(context.Background(), "DELETE FROM profesores")
-	if err != nil {
-		log.Printf("Error deleteando contenidos de la tabla profesores %s", err)
-	}
-	_, err = db.Exec(context.Background(), "ALTER SEQUENCE profesores_id_seq RESTART WITH 1")
-	if err != nil {
-		log.Printf("Error reseteando secuencia de profesor_id %s", err)
-	}
-}
-
-func AddProfesores(count int, db *pgxpool.Pool) {
-	ClearTableUsuario(db)
-	AddUsers(count, db)
-	if count < 1 {
-		count = 1
-	}
-
-	for i := 0; i < count; i++ {
-		now := time.Now()
-
-		db.Exec(
-			context.Background(),
-			`INSERT INTO profesores(apellidos, nombres,
-			usuarioId, activo, createdAt, updatedAt)
-			VALUES($1, $2, $3, $4, $5, $6)`,
-			"ap_test_"+strconv.Itoa(i),
-			"nom_test_"+strconv.Itoa(i),
-			i+1, i%2 == 0, now, now)
 	}
 }

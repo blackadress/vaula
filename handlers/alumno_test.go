@@ -2,19 +2,17 @@ package handlers
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-	"strconv"
 	"testing"
-	"time"
+
+	"github.com/blackadress/vaula/utils"
 )
 
 func TestEmptyAlumnoTable(t *testing.T) {
-	clearTableAlumno()
-	clearTableUsuario()
+	utils.ClearTableAlumno(a.DB)
+	utils.ClearTableUsuario(a.DB)
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
@@ -33,8 +31,8 @@ func TestEmptyAlumnoTable(t *testing.T) {
 }
 
 func TestGetNonExistentAlumno(t *testing.T) {
-	clearTableAlumno()
-	clearTableUsuario()
+	utils.ClearTableAlumno(a.DB)
+	utils.ClearTableUsuario(a.DB)
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
@@ -56,8 +54,8 @@ func TestGetNonExistentAlumno(t *testing.T) {
 }
 
 func TestCreateAlumno(t *testing.T) {
-	clearTableAlumno()
-	clearTableUsuario()
+	utils.ClearTableAlumno(a.DB)
+	utils.ClearTableUsuario(a.DB)
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
@@ -70,7 +68,7 @@ func TestCreateAlumno(t *testing.T) {
 		"codigo": "12345678",
 		"usuarioId": 1
 	}`)
-	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(jsonStr))
+	req, _ := http.NewRequest("POST", "/alumnos", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", token_str)
 
@@ -84,7 +82,7 @@ func TestCreateAlumno(t *testing.T) {
 		t.Errorf("Expected user nombres to be 'nom_al_test'. Got '%v'", m["nombres"])
 	}
 
-	if m["apellidos"] == "ap_al_test" {
+	if m["apellidos"] != "ap_al_test" {
 		t.Errorf("Expected apellidos to be 'ap_al_test'. Got '%v'", m["apellidos"])
 	}
 
@@ -102,14 +100,14 @@ func TestCreateAlumno(t *testing.T) {
 }
 
 func TestGetAlumno(t *testing.T) {
-	clearTableUsuario()
-	addAlumnos(1)
+	utils.ClearTableUsuario(a.DB)
+	utils.AddAlumnos(1, a.DB)
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/alumnos/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 
@@ -117,15 +115,15 @@ func TestGetAlumno(t *testing.T) {
 }
 
 func TestUpdateAlumno(t *testing.T) {
-	clearTableUsuario()
-	addAlumnos(1)
-	addUsers(2)
+	utils.ClearTableUsuario(a.DB)
+	utils.AddAlumnos(1, a.DB)
+	utils.AddUsers(2, a.DB)
 	ensureAuthorizedUserExists()
 
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/alumnos/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 	var originalAlumno map[string]interface{}
@@ -138,7 +136,7 @@ func TestUpdateAlumno(t *testing.T) {
 		"usuarioId": 2,
 		"activo": false}`)
 
-	req, _ = http.NewRequest("PUT", "/users/1", bytes.NewBuffer(jsonStr))
+	req, _ = http.NewRequest("PUT", "/alumnos/1", bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", token_str)
 	response = executeRequest(req, a)
@@ -199,69 +197,19 @@ func TestUpdateAlumno(t *testing.T) {
 }
 
 func TestDeleteAlumno(t *testing.T) {
-	clearTableUsuario()
-	addAlumnos(1)
+	utils.ClearTableUsuario(a.DB)
+	utils.AddAlumnos(1, a.DB)
 	ensureAuthorizedUserExists()
 	token := getTestJWT()
 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-	req, _ := http.NewRequest("GET", "/users/1", nil)
+	req, _ := http.NewRequest("GET", "/alumnos/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response := executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
 
-	req, _ = http.NewRequest("DELETE", "/users/1", nil)
+	req, _ = http.NewRequest("DELETE", "/alumnos/1", nil)
 	req.Header.Set("Authorization", token_str)
 	response = executeRequest(req, a)
 	checkResponseCode(t, http.StatusOK, response.Code)
-}
-
-func addAlumnos(count int) {
-	clearTableUsuario()
-	addUsers(count)
-	if count < 1 {
-		count = 1
-	}
-
-	for i := 0; i < count; i++ {
-		now := time.Now()
-		codigo := fmt.Sprintf("%.8s", "00000000"+strconv.Itoa(i))
-
-		a.DB.Exec(
-			context.Background(),
-			`INSERT INTO alumnos(apellidos, nombres, codigo,
-			usuarioId, activo, createdAt, updatedAt)
-			VALUES($1, $2, $3, $4, $5, $6, $7)`,
-			"ap_test_"+strconv.Itoa(i),
-			"nom_test_"+strconv.Itoa(i),
-			codigo, i+1, i%2 == 0, now, now)
-	}
-}
-
-const tableAlumnoCreationQuery = `
-CREATE TABLE IF NOT EXISTS alumnos
-	(
-		id SERIAL PRIMARY KEY,
-		apellidos VARCHAR(200) NOT NULL,
-		nombres VARCHAR(200) NOT NULL,
-		codigo CHAR(8) NOT NULL,
-		usuarioId INT REFERENCES usuarios(id),
-
-		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ,
-		updatedAt TIMESTAMPTZ
-	)
-`
-
-// es posible hacer decouple de `a.DB`?
-func ensureTableAlumnoExists() {
-	_, err := a.DB.Exec(context.Background(), tableAlumnoCreationQuery)
-	if err != nil {
-		log.Printf("TEST: error creando tabla alumnos: %s", err)
-	}
-}
-
-func clearTableAlumno() {
-	a.DB.Exec(context.Background(), "DELETE FROM alumnos")
-	a.DB.Exec(context.Background(), "ALTER SEQUENCE alumnos_id_seq RESTART WITH 1")
 }

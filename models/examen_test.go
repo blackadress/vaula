@@ -1,19 +1,16 @@
 package models
 
 import (
-	"context"
-	"log"
-	"strconv"
 	"testing"
 	"time"
 
+	"github.com/blackadress/vaula/utils"
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func TestCreateExamen(t *testing.T) {
-	ClearTableCurso(db) // limpia la tabla examenes tambien
-	AddCursos(1, db)
+	utils.ClearTableCurso(db) // limpia la tabla examenes tambien
+	utils.AddCursos(1, db)
 
 	loc, _ := time.LoadLocation("America/Lima")
 	fechaInicio := time.Date(2021, time.June,
@@ -39,8 +36,8 @@ func TestCreateExamen(t *testing.T) {
 }
 
 func TestGetExamen(t *testing.T) {
-	ClearTableCurso(db) // limpia la tabla examenes
-	AddExamenes(1, db)
+	utils.ClearTableCurso(db) // limpia la tabla examenes
+	utils.AddExamenes(1, db)
 
 	exa := Examen{ID: 1}
 	err := exa.GetExamen(db)
@@ -51,7 +48,7 @@ func TestGetExamen(t *testing.T) {
 }
 
 func TestNotGetExamen(t *testing.T) {
-	ClearTableExamen(db)
+	utils.ClearTableExamen(db)
 	exa := Examen{ID: 1}
 	err := exa.GetExamen(db)
 	if err != pgx.ErrNoRows {
@@ -60,8 +57,8 @@ func TestNotGetExamen(t *testing.T) {
 }
 
 func TestGetExamens(t *testing.T) {
-	ClearTableExamen(db)
-	AddExamenes(2, db)
+	utils.ClearTableExamen(db)
+	utils.AddExamenes(2, db)
 	examenes, err := GetExamenes(db)
 	if err != nil {
 		t.Errorf("algo salio mal con la comunicacion con la DB %s", err)
@@ -74,7 +71,7 @@ func TestGetExamens(t *testing.T) {
 }
 
 func TestGetZeroExamens(t *testing.T) {
-	ClearTableExamen(db)
+	utils.ClearTableExamen(db)
 
 	examenes, err := GetExamenes(db)
 	if err != nil {
@@ -87,9 +84,9 @@ func TestGetZeroExamens(t *testing.T) {
 }
 
 func TestUpdateExamen(t *testing.T) {
-	ClearTableCurso(db)
-	AddExamenes(1, db)
-	AddCursos(1, db)
+	utils.ClearTableCurso(db)
+	utils.AddExamenes(1, db)
+	utils.AddCursos(1, db)
 
 	original_ex := Examen{ID: 1}
 	err := original_ex.GetExamen(db)
@@ -163,74 +160,12 @@ func TestUpdateExamen(t *testing.T) {
 }
 
 func TestDeleteExamen(t *testing.T) {
-	ClearTableExamen(db)
-	AddExamenes(1, db)
+	utils.ClearTableExamen(db)
+	utils.AddExamenes(1, db)
 
 	exa := Examen{ID: 1}
 	err := exa.DeleteExamen(db)
 	if err != nil {
 		t.Errorf("Ocurrio un error en el metodo DeleteExamen")
-	}
-}
-
-const tableExamenCreationQuery = `
-CREATE TABLE IF NOT EXISTS examenes
-	(
-		id SERIAL PRIMARY KEY,
-		nombre VARCHAR(200) NOT NULL,
-		fechaInicio TIMESTAMPTZ NOT NULL,
-		fechaFinal TIMESTAMPTZ NOT NULL,
-		cursoId INT REFERENCES cursos(id),
-
-		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ NOT NULL,
-		updatedAt TIMESTAMPTZ NOT NULL
-	)
-`
-
-func EnsureTableExamenExists(db *pgxpool.Pool) {
-	_, err := db.Exec(context.Background(), tableExamenCreationQuery)
-	if err != nil {
-		log.Printf("TEST: error creando tabla examenes: %s", err)
-	}
-}
-
-func ClearTableExamen(db *pgxpool.Pool) {
-	_, err := db.Exec(context.Background(), "DELETE FROM examenes")
-	if err != nil {
-		log.Printf("Error deleteando contenidos de la tabla Examen %s", err)
-	}
-	_, err = db.Exec(context.Background(), "ALTER SEQUENCE examenes_id_seq RESTART WITH 1")
-	if err != nil {
-		log.Printf("Error reseteando secuencia de examen_id %s", err)
-	}
-
-}
-
-func AddExamenes(count int, db *pgxpool.Pool) {
-	AddCursos(count, db)
-	if count < 1 {
-		count = 1
-	}
-	now := time.Now()
-	loc, _ := time.LoadLocation("America/Lima")
-	fechaInicio := time.Date(2022, time.June,
-		20, 18, 0, 0, 0, loc)
-	fechaFinal := time.Date(2022, time.June,
-		22, 18, 0, 0, 0, loc)
-
-	for i := 0; i < count; i++ {
-		_, err := db.Exec(
-			context.Background(),
-			`INSERT INTO examenes(nombre, fechaInicio, fechaFinal,
-				cursoId, activo, createdAt, updatedAt)
-			VALUES($1, $2, $3, $4, $5, $6, $7)`,
-			"examen_test_"+strconv.Itoa(i),
-			fechaInicio, fechaFinal,
-			i+1, i%2 == 0, now, now)
-
-		if err != nil {
-			log.Printf("Error adding examenes %s", err)
-		}
 	}
 }

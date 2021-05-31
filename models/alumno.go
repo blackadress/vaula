@@ -330,7 +330,7 @@ func (at *AlumnoTrabajo) GetAlumnoTrabajoes(db *pgxpool.Pool) ([]AlumnoTrabajo, 
 			&at.FechaFinal, &at.AlumnoId, &at.CreatedAt, &at.UpdatedAt)
 		if err != nil {
 			log.Printf("Las filas obtenidas de la BD para Alumno Curso, no satisfacen a 'Scan' %s",
-		err)
+				err)
 			return nil, err
 		}
 		alumnoTrabajos = append(alumnoTrabajos, at)

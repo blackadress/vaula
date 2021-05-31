@@ -7,10 +7,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/blackadress/vaula/utils"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
 )
-
 
 var db *pgxpool.Pool
 
@@ -31,21 +31,21 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	EnsureTableUsuarioExists(db)
-	EnsureTableAlumnoExists(db)
-	EnsureTableProfesorExists(db)
-	EnsureTableExamenExists(db)
-	EnsureTableCursoExists(db)
-	EnsureTablePreguntaExists(db)
-	EnsureTableTrabajoExists(db)
-	EnsureTablePreguntaTrabajoExists(db)
+	utils.EnsureTableUsuarioExists(db)
+	utils.EnsureTableAlumnoExists(db)
+	utils.EnsureTableProfesorExists(db)
+	utils.EnsureTableExamenExists(db)
+	utils.EnsureTableCursoExists(db)
+	utils.EnsureTablePreguntaExists(db)
+	utils.EnsureTableTrabajoExists(db)
+	utils.EnsureTablePreguntaTrabajoExists(db)
 
 	code := m.Run()
 
 	// ClearTableAlumno(db) ya reseteado por ClearTableUsuario
 	// ClearTableProfesor(db) ya reseteado por ClearTableUsuario
-	ClearTableUsuario(db)
-	ClearTableCurso(db)
+	utils.ClearTableUsuario(db)
+	utils.ClearTableCurso(db)
 	// ClearTableExamen(db) ya reseteado por ClearTableCurso
 	// ClearTablePregunta(db) ya reseteado por ClearTableCurso
 	// ClearTableTrabajo(db) ya reseteado por ClearTableCurso

@@ -1,19 +1,14 @@
 package models
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"strconv"
 	"testing"
-	"time"
 
+	"github.com/blackadress/vaula/utils"
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func TestCreateCurso(t *testing.T) {
-	ClearTableCurso(db)
+	utils.ClearTableCurso(db)
 
 	al := Curso{
 		Nombre:   "nom_curso_prueba",
@@ -33,8 +28,8 @@ func TestCreateCurso(t *testing.T) {
 }
 
 func TestGetCurso(t *testing.T) {
-	ClearTableCurso(db)
-	AddCursos(1, db)
+	utils.ClearTableCurso(db)
+	utils.AddCursos(1, db)
 	al := Curso{ID: 1}
 	err := al.GetCurso(db)
 
@@ -44,7 +39,7 @@ func TestGetCurso(t *testing.T) {
 }
 
 func TestNotGetCurso(t *testing.T) {
-	ClearTableCurso(db)
+	utils.ClearTableCurso(db)
 	al := Curso{ID: 1}
 	err := al.GetCurso(db)
 	if err != pgx.ErrNoRows {
@@ -53,8 +48,8 @@ func TestNotGetCurso(t *testing.T) {
 }
 
 func TestGetCursos(t *testing.T) {
-	ClearTableCurso(db)
-	AddCursos(2, db)
+	utils.ClearTableCurso(db)
+	utils.AddCursos(2, db)
 	cursos, err := GetCursos(db)
 	if err != nil {
 		t.Errorf("Algo salio mal con la comunicacion con la DB %s", err)
@@ -67,7 +62,7 @@ func TestGetCursos(t *testing.T) {
 }
 
 func TestGetZeroCursos(t *testing.T) {
-	ClearTableCurso(db)
+	utils.ClearTableCurso(db)
 
 	cursos, err := GetCursos(db)
 	if err != nil {
@@ -80,8 +75,8 @@ func TestGetZeroCursos(t *testing.T) {
 }
 
 func TestUpdateCurso(t *testing.T) {
-	ClearTableCurso(db)
-	AddCursos(1, db)
+	utils.ClearTableCurso(db)
+	utils.AddCursos(1, db)
 
 	original_al := Curso{ID: 1}
 	err := original_al.GetCurso(db)
@@ -90,12 +85,12 @@ func TestUpdateCurso(t *testing.T) {
 	}
 
 	al_upd := Curso{
-		ID:        1,
+		ID:       1,
 		Nombre:   "nom_curso_prueba_upd",
-		Siglas: "sig_cur_pru_upd",
-		Silabo:    "sil_cur_pru_upd",
+		Siglas:   "sig_cur_pru_upd",
+		Silabo:   "sil_cur_pru_upd",
 		Semestre: "se_cur_pru_upd",
-		Activo:    false,
+		Activo:   false,
 	}
 	err = al_upd.UpdateCurso(db)
 	if err != nil {
@@ -149,69 +144,12 @@ func TestUpdateCurso(t *testing.T) {
 }
 
 func TestDeleteCurso(t *testing.T) {
-	ClearTableCurso(db)
-	AddCursos(1, db)
+	utils.ClearTableCurso(db)
+	utils.AddCursos(1, db)
 
 	al := Curso{ID: 1}
 	err := al.DeleteCurso(db)
 	if err != nil {
 		t.Errorf("Ocurrio un error en el metodo DeleteCurso")
-	}
-}
-
-const tableCursoCreationQuery = `
-CREATE TABLE IF NOT EXISTS cursos
-	(
-		id SERIAL PRIMARY KEY,
-		nombre VARCHAR(200) NOT NULL,
-		siglas VARCHAR(20) NOT NULL,
-		silabo VARCHAR(200) NOT NULL,
-		semestre VARCHAR(20) NOT NULL,
-
-		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ NOT NULL,
-		updatedAt TIMESTAMPTZ NOT NULL
-	)
-`
-
-func EnsureTableCursoExists(db *pgxpool.Pool) {
-	_, err := db.Exec(context.Background(), tableCursoCreationQuery)
-	if err != nil {
-		log.Printf("TEST: error creando tabla cursos: %s", err)
-	}
-}
-
-func ClearTableCurso(db *pgxpool.Pool) {
-	ClearTablePregunta(db)
-	ClearTableTrabajo(db)
-	ClearTablePreguntaTrabajo(db)
-	ClearTableExamen(db)
-	_, err := db.Exec(context.Background(), "DELETE FROM cursos")
-	if err != nil {
-		log.Printf("Error deleteando tabla %s", err)
-	}
-	_, err = db.Exec(context.Background(), "ALTER SEQUENCE cursos_id_seq RESTART WITH 1")
-	if err != nil {
-		log.Printf("Error alterando secuencia de curso_id %s", err)
-	}
-
-}
-
-func AddCursos(count int, db *pgxpool.Pool) {
-	if count < 1 {
-		count = 1
-	}
-	now := time.Now()
-
-	for i := 0; i < count; i++ {
-		semestre := fmt.Sprintf("%.20s", "semestre_"+strconv.Itoa(i))
-		db.Exec(
-			context.Background(),
-			`INSERT INTO cursos(nombre, siglas, silabo, semestre, activo, createdAt, updatedAt)
-			VALUES($1, $2, $3, $4, $5, $6, $7)`,
-			"curso_test_"+strconv.Itoa(i),
-			"TS-0"+strconv.Itoa(i),
-			"silabo_test_"+strconv.Itoa(i),
-			semestre, i%2 == 0, now, now)
 	}
 }

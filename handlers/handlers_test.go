@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/joho/godotenv"
+	"github.com/blackadress/vaula/utils"
 )
 
 var a App
@@ -29,26 +30,26 @@ func TestMain(m *testing.M) {
 		os.Getenv("APP_DB_NAME"))
 
 	// asegurarse de que todas las tablas existen
-	ensureTableUsuarioExists()
-	ensureTableAlternativaExists()
-	ensureTableAlumnoExists()
-	ensureTableCursoExists()
-	ensureTableExamenExists()
-	ensureTablePreguntaExists()
-	ensureTableProfesorExists()
-	ensureTableTrabajoExists()
+	utils.EnsureTableUsuarioExists(a.DB)
+	// utils.EnsureTableAlternativaExists(a.DB) TODO
+	utils.EnsureTableAlumnoExists(a.DB)
+	utils.EnsureTableCursoExists(a.DB)
+	utils.EnsureTableExamenExists(a.DB)
+	utils.EnsureTablePreguntaExists(a.DB)
+	utils.EnsureTableProfesorExists(a.DB)
+	utils.EnsureTableTrabajoExists(a.DB)
 
 	code := m.Run()
 
 	// limpiar las tablas de la BD
-	clearTableUsuario()
-	clearTableAlternativa()
-	clearTableAlumno()
-	clearTableCurso()
-	clearTableExamen()
-	clearTablePregunta()
-	clearTableProfesor()
-	clearTableTrabajo()
+	// utils.ClearTableAlternativa(a.DB)
+	// utils.ClearTableUsuario(a.DB)
+	// utils.ClearTableAlumno(a.DB)
+	// utils.ClearTableCurso(a.DB)
+	// utils.ClearTableExamen(a.DB)
+	// utils.ClearTablePregunta(a.DB)
+	// utils.ClearTableProfesor(a.DB)
+	// utils.ClearTableTrabajo(a.DB)
 	os.Exit(code)
 }
 

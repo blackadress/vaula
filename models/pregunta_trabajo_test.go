@@ -1,18 +1,14 @@
 package models
 
 import (
-	"context"
-	"log"
-	"strconv"
 	"testing"
-	"time"
 
+	"github.com/blackadress/vaula/utils"
 	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 func TestCreatePreguntaTrabajo(t *testing.T) {
-	ClearTableTrabajo(db) // limpia la tabla preguntaTrabajo tambien
+	utils.ClearTableTrabajo(db) // limpia la tabla preguntaTrabajo tambien
 
 	exa := PreguntaTrabajo{
 		Enunciado: "enun_preg_trab_prueba",
@@ -30,8 +26,8 @@ func TestCreatePreguntaTrabajo(t *testing.T) {
 }
 
 func TestGetPreguntaTrabajo(t *testing.T) {
-	ClearTableTrabajo(db) // limpia la tabla preguntasTrabajo
-	AddPreguntaTrabajos(1, db)
+	utils.ClearTableTrabajo(db) // limpia la tabla preguntasTrabajo
+	utils.AddPreguntaTrabajos(1, db)
 
 	exa := PreguntaTrabajo{ID: 1}
 	err := exa.GetPreguntaTrabajo(db)
@@ -42,7 +38,7 @@ func TestGetPreguntaTrabajo(t *testing.T) {
 }
 
 func TestNotGetPreguntaTrabajo(t *testing.T) {
-	ClearTablePreguntaTrabajo(db)
+	utils.ClearTablePreguntaTrabajo(db)
 	exa := PreguntaTrabajo{ID: 1}
 	err := exa.GetPreguntaTrabajo(db)
 	if err != pgx.ErrNoRows {
@@ -51,8 +47,8 @@ func TestNotGetPreguntaTrabajo(t *testing.T) {
 }
 
 func TestGetPreguntaTrabajos(t *testing.T) {
-	ClearTablePreguntaTrabajo(db)
-	AddPreguntaTrabajos(2, db)
+	utils.ClearTablePreguntaTrabajo(db)
+	utils.AddPreguntaTrabajos(2, db)
 	preguntasTrabajo, err := GetPreguntasTrabajo(db)
 	if err != nil {
 		t.Errorf("algo salio mal con la comunicacion con la DB %s", err)
@@ -64,7 +60,7 @@ func TestGetPreguntaTrabajos(t *testing.T) {
 }
 
 func TestGetZeroPreguntaTrabajos(t *testing.T) {
-	ClearTablePreguntaTrabajo(db)
+	utils.ClearTablePreguntaTrabajo(db)
 
 	preguntasTrabajo, err := GetPreguntasTrabajo(db)
 	if err != nil {
@@ -77,8 +73,8 @@ func TestGetZeroPreguntaTrabajos(t *testing.T) {
 }
 
 func TestUpdatePreguntaTrabajo(t *testing.T) {
-	ClearTableTrabajo(db) // limpia la tabla preguntasTrabajo tambien
-	AddPreguntaTrabajos(1, db)
+	utils.ClearTableTrabajo(db) // limpia la tabla preguntasTrabajo tambien
+	utils.AddPreguntaTrabajos(1, db)
 
 	original_ex := PreguntaTrabajo{ID: 1}
 	err := original_ex.GetPreguntaTrabajo(db)
@@ -134,66 +130,12 @@ func TestUpdatePreguntaTrabajo(t *testing.T) {
 }
 
 func TestDeletePreguntaTrabajo(t *testing.T) {
-	ClearTablePreguntaTrabajo(db)
-	AddPreguntaTrabajos(1, db)
+	utils.ClearTablePreguntaTrabajo(db)
+	utils.AddPreguntaTrabajos(1, db)
 
 	exa := PreguntaTrabajo{ID: 1}
 	err := exa.DeletePreguntaTrabajo(db)
 	if err != nil {
 		t.Errorf("Ocurrio un error en el metodo DeletePreguntaTrabajo")
-	}
-}
-
-const tablePreguntaTrabajoCreationQuery = `
-CREATE TABLE IF NOT EXISTS preguntasTrabajo
-	(
-		id SERIAL PRIMARY KEY,
-		enunciado TEXT NOT NULL,
-		trabajoId INT REFERENCES cursos(id),
-
-		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ NOT NULL,
-		updatedAt TIMESTAMPTZ NOT NULL
-	)
-`
-
-func EnsureTablePreguntaTrabajoExists(db *pgxpool.Pool) {
-	_, err := db.Exec(context.Background(), tablePreguntaTrabajoCreationQuery)
-	if err != nil {
-		log.Printf("TEST: error creando tabla preguntasTrabajo: %s", err)
-	}
-}
-
-func ClearTablePreguntaTrabajo(db *pgxpool.Pool) {
-	_, err := db.Exec(context.Background(), "DELETE FROM preguntasTrabajo")
-	if err != nil {
-		log.Printf("Error deleteando contenidos de la tabla PreguntasTrabajo %s", err)
-	}
-	_, err = db.Exec(context.Background(), "ALTER SEQUENCE preguntasTrabajo_id_seq RESTART WITH 1")
-	if err != nil {
-		log.Printf("Error reseteando secuencia de pregunta_id %s", err)
-	}
-
-}
-
-func AddPreguntaTrabajos(count int, db *pgxpool.Pool) {
-	AddTrabajos(count, db)
-	if count < 1 {
-		count = 1
-	}
-	now := time.Now()
-
-	for i := 0; i < count; i++ {
-		_, err := db.Exec(
-			context.Background(),
-			`INSERT INTO preguntasTrabajo(enunciado, trabajoId, 
-				activo, createdAt, updatedAt)
-			VALUES($1, $2, $3, $4, $5)`,
-			"preg_enun_test_"+strconv.Itoa(i),
-			i+1, i%2 == 0, now, now)
-
-		if err != nil {
-			log.Printf("Error adding preguntasTrabajo %s", err)
-		}
 	}
 }
