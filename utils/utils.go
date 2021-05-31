@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-// USUARIOS TEST
+// USUARIOS
 const tableCreationQuery = `
 CREATE TABLE IF NOT EXISTS usuarios
 	(
@@ -64,7 +64,6 @@ func AddUsers(count int, db *pgxpool.Pool) {
 }
 
 // ALUMNOS
-
 const tableAlumnoCreationQuery = `
 CREATE TABLE IF NOT EXISTS alumnos
 	(
@@ -120,63 +119,7 @@ func AddAlumnos(count int, db *pgxpool.Pool) {
 	}
 }
 
-// PROFESOR
-
-const tableProfesorCreationQuery = `
-CREATE TABLE IF NOT EXISTS profesores
-	(
-		id SERIAL PRIMARY KEY,
-		apellidos VARCHAR(200) NOT NULL,
-		nombres VARCHAR(200) NOT NULL,
-		usuarioId INT REFERENCES usuarios(id),
-
-		activo BOOLEAN NOT NULL,
-		createdAt TIMESTAMPTZ NOT NULL,
-		updatedAt TIMESTAMPTZ NOT NULL
-	)
-`
-
-func EnsureTableProfesorExists(db *pgxpool.Pool) {
-	_, err := db.Exec(context.Background(), tableProfesorCreationQuery)
-	if err != nil {
-		log.Printf("TEST: error creando tabla profesores: %s", err)
-	}
-}
-
-func ClearTableProfesor(db *pgxpool.Pool) {
-	_, err := db.Exec(context.Background(), "DELETE FROM profesores")
-	if err != nil {
-		log.Printf("Error deleteando contenidos de la tabla profesores %s", err)
-	}
-	_, err = db.Exec(context.Background(), "ALTER SEQUENCE profesores_id_seq RESTART WITH 1")
-	if err != nil {
-		log.Printf("Error reseteando secuencia de profesor_id %s", err)
-	}
-}
-
-func AddProfesores(count int, db *pgxpool.Pool) {
-	ClearTableUsuario(db)
-	AddUsers(count, db)
-	if count < 1 {
-		count = 1
-	}
-
-	for i := 0; i < count; i++ {
-		now := time.Now()
-
-		db.Exec(
-			context.Background(),
-			`INSERT INTO profesores(apellidos, nombres,
-			usuarioId, activo, createdAt, updatedAt)
-			VALUES($1, $2, $3, $4, $5, $6)`,
-			"ap_test_"+strconv.Itoa(i),
-			"nom_test_"+strconv.Itoa(i),
-			i+1, i%2 == 0, now, now)
-	}
-}
-
-// CURSOS
-
+// CURSO
 const tableCursoCreationQuery = `
 CREATE TABLE IF NOT EXISTS cursos
 	(
@@ -352,7 +295,7 @@ func AddPreguntas(count int, db *pgxpool.Pool) {
 	}
 }
 
-// PREGUNTAS TRABAJO
+// PREGUNTA TRABAJO
 const tablePreguntaTrabajoCreationQuery = `
 CREATE TABLE IF NOT EXISTS preguntasTrabajo
 	(
@@ -407,7 +350,61 @@ func AddPreguntaTrabajos(count int, db *pgxpool.Pool) {
 	}
 }
 
-// TRABAJOS
+// PROFESOR
+const tableProfesorCreationQuery = `
+CREATE TABLE IF NOT EXISTS profesores
+	(
+		id SERIAL PRIMARY KEY,
+		apellidos VARCHAR(200) NOT NULL,
+		nombres VARCHAR(200) NOT NULL,
+		usuarioId INT REFERENCES usuarios(id),
+
+		activo BOOLEAN NOT NULL,
+		createdAt TIMESTAMPTZ NOT NULL,
+		updatedAt TIMESTAMPTZ NOT NULL
+	)
+`
+
+func EnsureTableProfesorExists(db *pgxpool.Pool) {
+	_, err := db.Exec(context.Background(), tableProfesorCreationQuery)
+	if err != nil {
+		log.Printf("TEST: error creando tabla profesores: %s", err)
+	}
+}
+
+func ClearTableProfesor(db *pgxpool.Pool) {
+	_, err := db.Exec(context.Background(), "DELETE FROM profesores")
+	if err != nil {
+		log.Printf("Error deleteando contenidos de la tabla profesores %s", err)
+	}
+	_, err = db.Exec(context.Background(), "ALTER SEQUENCE profesores_id_seq RESTART WITH 1")
+	if err != nil {
+		log.Printf("Error reseteando secuencia de profesor_id %s", err)
+	}
+}
+
+func AddProfesores(count int, db *pgxpool.Pool) {
+	ClearTableUsuario(db)
+	AddUsers(count, db)
+	if count < 1 {
+		count = 1
+	}
+
+	for i := 0; i < count; i++ {
+		now := time.Now()
+
+		db.Exec(
+			context.Background(),
+			`INSERT INTO profesores(apellidos, nombres,
+			usuarioId, activo, createdAt, updatedAt)
+			VALUES($1, $2, $3, $4, $5, $6)`,
+			"ap_test_"+strconv.Itoa(i),
+			"nom_test_"+strconv.Itoa(i),
+			i+1, i%2 == 0, now, now)
+	}
+}
+
+// TRABAJO
 const tableTrabajoCreationQuery = `
 CREATE TABLE IF NOT EXISTS trabajos
 	(
@@ -487,12 +484,12 @@ CREATE TABLE IF NOT EXISTS alternativas
 func EnsureTableAlternativaExists(db *pgxpool.Pool) {
 	_, err := db.Exec(context.Background(), tableAlternativaCreationQuery)
 	if err != nil {
-		log.Printf("TEST: error creando tabla trabajos: %s", err)
+		log.Printf("TEST: error creando tabla alternativas: %s", err)
 	}
 }
 
 func ClearTableAlternativa(db *pgxpool.Pool) {
-	_, err := db.Exec(context.Background(), "DELETE FROM trabajos")
+	_, err := db.Exec(context.Background(), "DELETE FROM alternativas")
 	if err != nil {
 		log.Printf("Error deleteando contenidos de la tabla Alternativa %s", err)
 	}
@@ -513,7 +510,7 @@ func AddAlternativas(count int, db *pgxpool.Pool) {
 	for i := 0; i < count; i++ {
 		_, err := db.Exec(
 			context.Background(),
-			`INSERT INTO trabajos(valor, correcto, activo, createdAt, updatedAt)
+			`INSERT INTO alternativas(valor, correcto, activo, createdAt, updatedAt)
 			VALUES($1, $2, $3, $4, $5)`,
 			"alternativa_valor_"+strconv.Itoa(i),
 			i%2 == 0, i%2 == 0, now, now)

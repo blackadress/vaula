@@ -11,8 +11,8 @@ func TestCreateAlternativa(t *testing.T) {
 	utils.ClearTableAlternativa(db)
 
 	al := Alternativa{
-		Valor:   "valor_alt_prueba",
-		Correcto:true,
+		Valor:    "valor_alt_prueba",
+		Correcto: true,
 		Activo:   true,
 	}
 	err := al.CreateAlternativa(db)
@@ -32,7 +32,7 @@ func TestGetAlternativa(t *testing.T) {
 	err := al.GetAlternativa(db)
 
 	if err != nil {
-		t.Errorf("Se esperaba obtener el curso con ID 1. Se obtuvo %v", err)
+		t.Errorf("Se esperaba obtener el alternativa con ID 1. Se obtuvo %v", err)
 	}
 }
 
@@ -84,8 +84,8 @@ func TestUpdateAlternativa(t *testing.T) {
 
 	al_upd := Alternativa{
 		ID:       1,
-		Valor:   "valor_alt_prueba_upd",
-		Correcto:false,
+		Valor:    "valor_alt_prueba_upd",
+		Correcto: false,
 		Activo:   false,
 	}
 	err = al_upd.UpdateAlternativa(db)
@@ -104,27 +104,27 @@ func TestUpdateAlternativa(t *testing.T) {
 	}
 
 	if original_al.Valor == al_upd.Valor {
-		t.Errorf("Se esperaba que los Valor cambiaran de '%s' a '%s'. Se obtuvo %s",
+		t.Errorf("Se esperaba que Valor cambiaran de '%s' a '%s'. Se obtuvo %s",
 			original_al.Valor, al_upd.Valor, original_al.Valor)
 	}
 
 	if original_al.Correcto == al_upd.Correcto {
-		t.Errorf("Se esperaba que los Correcto cambiaran de '%s' a '%s'. Se obtuvo %s",
+		t.Errorf("Se esperaba que Correcto cambiaran de '%t' a '%t'. Se obtuvo %t",
 			original_al.Correcto, al_upd.Correcto, original_al.Correcto)
 	}
 
 	if original_al.Activo == al_upd.Activo {
-		t.Errorf("Se esperaba que los Activo cambiaran de '%v' a '%v'. Se obtuvo %v",
+		t.Errorf("Se esperaba que Activo cambiaran de '%v' a '%v'. Se obtuvo %v",
 			original_al.Activo, al_upd.Activo, original_al.Activo)
 	}
 
 	if original_al.CreatedAt != al_upd.CreatedAt {
-		t.Errorf("Se esperaba que los CreatedAt cambiaran de '%v' a '%v'. Se obtuvo %v",
+		t.Errorf("Se esperaba que CreatedAt no cambiara de '%v' a '%v'. Se obtuvo %v",
 			original_al.CreatedAt, al_upd.CreatedAt, original_al.CreatedAt)
 	}
 
 	if original_al.UpdatedAt == al_upd.UpdatedAt {
-		t.Errorf("Se esperaba que los UpdatedAt cambiaran de '%v' a '%v'. Se obtuvo %v",
+		t.Errorf("Se esperaba que UpdatedAt cambiaran de '%v' a '%v'. Se obtuvo %v",
 			original_al.UpdatedAt, al_upd.UpdatedAt, original_al.UpdatedAt)
 	}
 }

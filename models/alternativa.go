@@ -70,9 +70,9 @@ func (a *Alternativa) UpdateAlternativa(db *pgxpool.Pool) error {
 	updTime := time.Now()
 	_, err := db.Exec(
 		context.Background(),
-		`UPDATE alternativas SET valor=$1, correcto=$2, updatedAt=$3
-		WHERE id=$4`,
-		a.Valor, a.Correcto, updTime, a.ID)
+		`UPDATE alternativas SET valor=$1, correcto=$2, activo=$3, updatedAt=$4
+		WHERE id=$5`,
+		a.Valor, a.Correcto, a.Activo, updTime, a.ID)
 
 	return err
 }

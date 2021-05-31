@@ -39,6 +39,7 @@ func TestMain(m *testing.M) {
 	utils.EnsureTablePreguntaExists(db)
 	utils.EnsureTableTrabajoExists(db)
 	utils.EnsureTablePreguntaTrabajoExists(db)
+	utils.EnsureTableAlternativaExists(db)
 
 	code := m.Run()
 
@@ -46,6 +47,7 @@ func TestMain(m *testing.M) {
 	// ClearTableProfesor(db) ya reseteado por ClearTableUsuario
 	utils.ClearTableUsuario(db)
 	utils.ClearTableCurso(db)
+	utils.ClearTableAlternativa(db)
 	// ClearTableExamen(db) ya reseteado por ClearTableCurso
 	// ClearTablePregunta(db) ya reseteado por ClearTableCurso
 	// ClearTableTrabajo(db) ya reseteado por ClearTableCurso
