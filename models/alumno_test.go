@@ -240,6 +240,8 @@ func EnsureTableUsuarioExists(db *pgxpool.Pool) {
 }
 
 func ClearTableUsuario(db *pgxpool.Pool) {
+	ClearTableAlumno(db)
+	ClearTableProfesor(db)
 	_, err := db.Exec(context.Background(), "DELETE FROM usuarios")
 	if err != nil {
 		log.Printf("Error deleteando contenidos de la tabla usuarios %s", err)
