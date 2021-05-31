@@ -469,3 +469,57 @@ func AddTrabajos(count int, db *pgxpool.Pool) {
 		}
 	}
 }
+
+// ALTERNATIVAS
+const tableAlternativaCreationQuery = `
+CREATE TABLE IF NOT EXISTS alternativas
+	(
+		id SERIAL PRIMARY KEY,
+		valor VARCHAR(100) NOT NULL,
+		correcto BOOLEAN NOT NULL,
+
+		activo BOOLEAN NOT NULL,
+		createdAt TIMESTAMPTZ NOT NULL,
+		updatedAt TIMESTAMPTZ NOT NULL
+	)
+`
+
+func EnsureTableAlternativaExists(db *pgxpool.Pool) {
+	_, err := db.Exec(context.Background(), tableAlternativaCreationQuery)
+	if err != nil {
+		log.Printf("TEST: error creando tabla trabajos: %s", err)
+	}
+}
+
+func ClearTableAlternativa(db *pgxpool.Pool) {
+	_, err := db.Exec(context.Background(), "DELETE FROM trabajos")
+	if err != nil {
+		log.Printf("Error deleteando contenidos de la tabla Alternativa %s", err)
+	}
+	_, err = db.Exec(context.Background(), "ALTER SEQUENCE alternativas_id_seq RESTART WITH 1")
+	if err != nil {
+		log.Printf("Error reseteando secuencia de alternativa_id %s", err)
+	}
+
+}
+
+func AddAlternativas(count int, db *pgxpool.Pool) {
+	AddCursos(count, db)
+	if count < 1 {
+		count = 1
+	}
+	now := time.Now()
+
+	for i := 0; i < count; i++ {
+		_, err := db.Exec(
+			context.Background(),
+			`INSERT INTO trabajos(valor, correcto, activo, createdAt, updatedAt)
+			VALUES($1, $2, $3, $4, $5)`,
+			"alternativa_valor_"+strconv.Itoa(i),
+			i%2 == 0, i%2 == 0, now, now)
+
+		if err != nil {
+			log.Printf("Error adding trabajos %s", err)
+		}
+	}
+}

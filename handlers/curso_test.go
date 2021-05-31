@@ -1,59 +1,56 @@
 package handlers
 
-// import (
-// 	"bytes"
-// 	"context"
-// 	"encoding/json"
-// 	"fmt"
-// 	"log"
-// 	"net/http"
-// 	"strconv"
-// 	"testing"
-// 	"time"
-// )
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"testing"
 
-// func TestEmptyCursoTable(t *testing.T) {
-// 	clearTableCurso()
-// 	clearTableUsuario()
-// 	ensureAuthorizedUserExists()
+	"github.com/blackadress/vaula/utils"
+)
 
-// 	token := getTestJWT()
-// 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+func TestEmptyCursoTable(t *testing.T) {
+	utils.ClearTableCurso(a.DB)
+	utils.ClearTableUsuario(a.DB)
+	ensureAuthorizedUserExists()
 
-// 	req, _ := http.NewRequest("GET", "/cursos", nil)
-// 	req.Header.Set("Authorization", token_str)
-// 	response := executeRequest(req, a)
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-// 	checkResponseCode(t, http.StatusOK, response.Code)
+	req, _ := http.NewRequest("GET", "/cursos", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
 
-// 	body := response.Body.String()
-// 	if body != "" {
-// 		t.Errorf("Se esperaba un array vacio. Se obtuvo %#v", body)
-// 	}
-// }
+	checkResponseCode(t, http.StatusOK, response.Code)
 
-// func TestGetNonExistentCurso(t *testing.T) {
-// 	clearTableCurso()
-// 	clearTableUsuario()
-// 	ensureAuthorizedUserExists()
+	body := response.Body.String()
+	if body != "" {
+		t.Errorf("Se esperaba un array vacio. Se obtuvo %#v", body)
+	}
+}
 
-// 	token := getTestJWT()
-// 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+func TestGetNonExistentCurso(t *testing.T) {
+	utils.ClearTableCurso(a.DB)
+	utils.ClearTableUsuario(a.DB)
+	ensureAuthorizedUserExists()
 
-// 	req, _ := http.NewRequest("GET", "/cursos/11", nil)
-// 	req.Header.Set("Authorization", token_str)
-// 	response := executeRequest(req, a)
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-// 	checkResponseCode(t, http.StatusNotFound, response.Code)
+	req, _ := http.NewRequest("GET", "/cursos/11", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
 
-// 	var m map[string]string
-// 	json.Unmarshal(response.Body.Bytes(), &m)
-// 	if m["error"] != "Curso no encontrado" {
-// 		t.Errorf(
-// 			"Se espera que la key 'error' sea 'Curso no encontrado'. Got '%s'",
-// 			m["error"])
-// 	}
-// }
+	checkResponseCode(t, http.StatusNotFound, response.Code)
+
+	var m map[string]string
+	json.Unmarshal(response.Body.Bytes(), &m)
+	if m["error"] != "Curso no encontrado" {
+		t.Errorf(
+			"Se espera que la key 'error' sea 'Curso no encontrado'. Got '%s'",
+			m["error"])
+	}
+}
 
 // func TestCreateCurso(t *testing.T) {
 // 	clearTableCurso()
