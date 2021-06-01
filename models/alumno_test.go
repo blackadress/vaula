@@ -45,7 +45,7 @@ func TestNotGetAlumno(t *testing.T) {
 	al := Alumno{ID: 1}
 	err := al.GetAlumno(db)
 	if err != pgx.ErrNoRows {
-		t.Errorf("Se esperaba no obtener ningun alumno, se obtuvo diferente error. ERROR %v", err)
+		t.Errorf("Se esperaba error ErrNoRows, se obtuvo diferente error. ERROR %v", err)
 	}
 }
 
@@ -54,7 +54,7 @@ func TestGetAlumnos(t *testing.T) {
 	utils.AddAlumnos(2, db)
 	alumnos, err := GetAlumnos(db)
 	if err != nil {
-		t.Errorf("Algo salio mal con la comunicacion con la DB %s", err)
+		t.Errorf("Metodo alumno.GetAlumnos no funciona %s", err)
 	}
 
 	if len(alumnos) != 2 {
@@ -67,7 +67,7 @@ func TestGetZeroAlumnos(t *testing.T) {
 
 	alumnos, err := GetAlumnos(db)
 	if err != nil {
-		t.Errorf("Algo salio mal con la comunicacion con la DB %s", err)
+		t.Errorf("Metodo alumnos.GetAlumnos no funciona %s", err)
 	}
 
 	if len(alumnos) != 0 {
