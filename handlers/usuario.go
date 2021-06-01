@@ -21,7 +21,8 @@ func (a *App) getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		log.Printf("GET %s code: %d ERROR: %s", r.RequestURI, http.StatusBadRequest, err.Error())
+		log.Printf("GET %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusBadRequest, err.Error())
 		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
@@ -30,10 +31,12 @@ func (a *App) getUserByIdHandler(w http.ResponseWriter, r *http.Request) {
 	if err := u.GetUser(a.DB); err != nil {
 		switch err {
 		case pgx.ErrNoRows:
-			log.Printf("GET %s code: %d ERROR: %s", r.RequestURI, http.StatusNotFound, err.Error())
+			log.Printf("GET %s code: %d ERROR: %s", r.RequestURI,
+				http.StatusNotFound, err.Error())
 			respondWithError(w, http.StatusNotFound, "User not found")
 		default:
-			log.Printf("GET %s code: %d ERROR: %s", r.RequestURI, http.StatusInternalServerError, err.Error())
+			log.Printf("GET %s code: %d ERROR: %s", r.RequestURI,
+				http.StatusInternalServerError, err.Error())
 			respondWithError(w, http.StatusInternalServerError, err.Error())
 		}
 		return
@@ -47,7 +50,8 @@ func (a *App) getUsersHandler(w http.ResponseWriter, r *http.Request) {
 	users, err := models.GetUsers(a.DB)
 
 	if err != nil {
-		log.Printf("GET %s code: %d ERROR: %s", r.RequestURI, http.StatusInternalServerError, err.Error())
+		log.Printf("GET %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusInternalServerError, err.Error())
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -61,7 +65,8 @@ func (a *App) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	var u models.User
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&u); err != nil {
-		log.Printf("POST %s code: %d ERROR: %s", r.RequestURI, http.StatusBadRequest, err.Error())
+		log.Printf("POST %s code: %d ERROR: %s", r.RequestURI,
+			http.StatusBadRequest, err.Error())
 		respondWithError(w, http.StatusBadRequest, "Invalid payload")
 		return
 	}
@@ -172,7 +177,8 @@ func (a *App) auth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(uFetched.Password), []byte(u.Password)); err != nil {
+	err := bcrypt.CompareHashAndPassword([]byte(uFetched.Password), []byte(u.Password))
+	if err != nil {
 		// Invalid password
 		log.Printf("Password invalida")
 		log.Printf("POST %s code: %d ERROR: %s", r.RequestURI,
