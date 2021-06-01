@@ -10,7 +10,7 @@ import (
 
 type Pregunta struct {
 	ID        int    `json:"id"`
-	Enunciado string `json:"Enunciado"`
+	Enunciado string `json:"enunciado"`
 	ExamenId  int    `json:"examenId"`
 	Examen    Examen `json:"examen"`
 
