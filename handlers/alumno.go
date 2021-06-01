@@ -30,8 +30,8 @@ func (a *App) getAlumnoByIdHandler(w http.ResponseWriter, r *http.Request) {
 				http.StatusNotFound, err.Error())
 			respondWithError(w, http.StatusNotFound, "Alumno no encontrado")
 		default:
-			log.Printf("GET %s code: %d ERROR: %s -- wtf just happened? default switch", r.RequestURI,
-				http.StatusInternalServerError, err.Error())
+			log.Printf("GET %s code: %d ERROR: %s -- wtf just happened? default switch",
+				r.RequestURI, http.StatusInternalServerError, err.Error())
 			respondWithError(w, http.StatusInternalServerError, err.Error())
 		}
 		return
@@ -120,7 +120,6 @@ func (a *App) updateAlumnoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) deleteAlumnoHandler(w http.ResponseWriter, r *http.Request) {
-
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
