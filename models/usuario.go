@@ -25,7 +25,7 @@ func (u *User) GetUser(db *pgxpool.Pool) error {
 	return db.QueryRow(
 		context.Background(),
 		`SELECT username, password, email,
-		activo, createdAt, updatedAt,
+		activo, createdAt, updatedAt
 		FROM usuarios
 		WHERE id=$1`,
 		u.ID,
