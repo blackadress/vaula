@@ -1,233 +1,190 @@
 package handlers
 
-// import (
-// 	"bytes"
-// 	"context"
-// 	"encoding/json"
-// 	"fmt"
-// 	"log"
-// 	"net/http"
-// 	"strconv"
-// 	"testing"
-// 	"time"
-// )
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"testing"
 
-// func TestEmptyPreguntaTable(t *testing.T) {
-// 	clearTablePregunta()
-// 	ensureAuthorizedUserExists()
+	"github.com/blackadress/vaula/utils"
+)
 
-// 	token := getTestJWT()
-// 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+func TestEmptyPreguntaTable(t *testing.T) {
+	utils.ClearTablePregunta(a.DB)
+	ensureAuthorizedUserExists()
 
-// 	req, _ := http.NewRequest("GET", "/preguntas", nil)
-// 	req.Header.Set("Authorization", token_str)
-// 	response := executeRequest(req, a)
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-// 	checkResponseCode(t, http.StatusOK, response.Code)
+	req, _ := http.NewRequest("GET", "/preguntas", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
 
-// 	body := response.Body.String()
-// 	if body != "" {
-// 		t.Errorf("Se esperaba un array vacio. Se obtuvo %#v", body)
-// 	}
-// }
+	checkResponseCode(t, http.StatusOK, response.Code)
 
-// func TestGetNonExistentPregunta(t *testing.T) {
-// 	clearTablePregunta()
-// 	ensureAuthorizedUserExists()
+	body := response.Body.String()
+	if body != "[]" {
+		t.Errorf("Se esperaba un array vacio. Se obtuvo %#v", body)
+	}
+}
 
-// 	token := getTestJWT()
-// 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+func TestGetNonExistentPregunta(t *testing.T) {
+	utils.ClearTablePregunta(a.DB)
+	ensureAuthorizedUserExists()
 
-// 	req, _ := http.NewRequest("GET", "/preguntas/11", nil)
-// 	req.Header.Set("Authorization", token_str)
-// 	response := executeRequest(req, a)
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-// 	checkResponseCode(t, http.StatusNotFound, response.Code)
+	req, _ := http.NewRequest("GET", "/preguntas/11", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
 
-// 	var m map[string]string
-// 	json.Unmarshal(response.Body.Bytes(), &m)
-// 	if m["error"] != "Pregunta no encontrado" {
-// 		t.Errorf(
-// 			"Se espera que la key 'error' sea 'Pregunta no encontrado'. Got '%s'",
-// 			m["error"])
-// 	}
-// }
+	checkResponseCode(t, http.StatusNotFound, response.Code)
 
-// func TestCreatePregunta(t *testing.T) {
-// 	clearTableUsuario()
-// 	ensureAuthorizedUserExists()
-// 	clearTableExamen()
-// 	addExamenes(1)
+	var m map[string]string
+	json.Unmarshal(response.Body.Bytes(), &m)
+	if m["error"] != "Pregunta no encontrado" {
+		t.Errorf(
+			"Se espera que la key 'error' sea 'Pregunta no encontrado'. Got '%s'",
+			m["error"])
+	}
+}
 
-// 	var jsonStr = []byte(`
-// 	{
-// 		"enunciado": "enunciado_test",
-// 		"examenId": 1,
-// 	}`)
-// 	req, _ := http.NewRequest("POST", "/preguntas", bytes.NewBuffer(jsonStr))
-// 	req.Header.Set("Content-Type", "application/json")
+func TestCreatePregunta(t *testing.T) {
+	utils.ClearTableUsuario(a.DB)
+	utils.ClearTableExamen(a.DB)
+	utils.AddExamenes(1, a.DB)
+	ensureAuthorizedUserExists()
 
-// 	response := executeRequest(req, a)
-// 	checkResponseCode(t, http.StatusCreated, response.Code)
+	var jsonStr = []byte(`
+	{
+		"enunciado": "enunciado_test",
+		"examenId": 1
+	}`)
 
-// 	var m map[string]interface{}
-// 	json.Unmarshal(response.Body.Bytes(), &m)
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-// 	if m["enunciado"] != "enunciado_test" {
-// 		t.Errorf("Expected pregunta enunciado to be 'enunciado_test'. Got '%v'", m["enunciado"])
-// 	}
+	req, _ := http.NewRequest("POST", "/preguntas", bytes.NewBuffer(jsonStr))
+	req.Header.Set("Authorization", token_str)
+	req.Header.Set("Content-Type", "application/json")
 
-// 	if m["examenId"] == 1.0 {
-// 		t.Errorf("Expected examenId to be '1'. Got '%v'", m["examenId"])
-// 	}
+	response := executeRequest(req, a)
+	checkResponseCode(t, http.StatusCreated, response.Code)
 
-// 	if m["activo"] == true {
-// 		t.Errorf("Expected pregunta activo to be 'true'. Got '%v'", m["activo"])
-// 	}
+	var m map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &m)
 
-// 	if m["id"] != 1.0 {
-// 		t.Errorf("Expected pregunta ID to be '1'. Got '%v'", m["id"])
-// 	}
-// }
+	if m["enunciado"] != "enunciado_test" {
+		t.Errorf("Expected pregunta enunciado to be 'enunciado_test'. Got '%v'", m["enunciado"])
+	}
 
-// func TestGetPregunta(t *testing.T) {
-// 	clearTableUsuario()
-// 	addPreguntas(1)
-// 	ensureAuthorizedUserExists()
+	if m["examenId"] != 1.0 {
+		t.Errorf("Expected examenId to be '1'. Got '%v'", m["examenId"])
+	}
 
-// 	token := getTestJWT()
-// 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+	if m["activo"] == true {
+		t.Errorf("Expected pregunta activo to be 'true'. Got '%v'", m["activo"])
+	}
 
-// 	req, _ := http.NewRequest("GET", "/preguntas/1", nil)
-// 	req.Header.Set("Authorization", token_str)
-// 	response := executeRequest(req, a)
+	if m["id"] != 1.0 {
+		t.Errorf("Expected pregunta ID to be '1'. Got '%v'", m["id"])
+	}
+}
 
-// 	checkResponseCode(t, http.StatusOK, response.Code)
-// }
+func TestGetPregunta(t *testing.T) {
+	utils.ClearTableUsuario(a.DB)
+	utils.AddPreguntas(1, a.DB)
+	ensureAuthorizedUserExists()
 
-// func TestUpdatePregunta(t *testing.T) {
-// 	clearTableUsuario()
-// 	addPreguntas(1)
-// 	addExamenes(1)
-// 	ensureAuthorizedUserExists()
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-// 	token := getTestJWT()
-// 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+	req, _ := http.NewRequest("GET", "/preguntas/1", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
 
-// 	req, _ := http.NewRequest("GET", "/preguntas/1", nil)
-// 	req.Header.Set("Authorization", token_str)
-// 	response := executeRequest(req, a)
-// 	var originalPregunta map[string]interface{}
-// 	json.Unmarshal(response.Body.Bytes(), &originalPregunta)
+	checkResponseCode(t, http.StatusOK, response.Code)
+}
 
-// 	var jsonStr = []byte(`{
-// 		"enunciado": "enunciado_test_updated",
-// 		"examenId": 2,
-// 		"activo": false
-// 	}`)
+func TestUpdatePregunta(t *testing.T) {
+	utils.ClearTableUsuario(a.DB)
+	utils.AddPreguntas(1, a.DB)
+	utils.AddExamenes(1, a.DB)
+	ensureAuthorizedUserExists()
 
-// 	req, _ = http.NewRequest("PUT", "/preguntas/1", bytes.NewBuffer(jsonStr))
-// 	req.Header.Set("Content-Type", "application/json")
-// 	req.Header.Set("Authorization", token_str)
-// 	response = executeRequest(req, a)
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-// 	checkResponseCode(t, http.StatusOK, response.Code)
+	req, _ := http.NewRequest("GET", "/preguntas/1", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
+	var originalPregunta map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &originalPregunta)
 
-// 	var m map[string]interface{}
-// 	json.Unmarshal(response.Body.Bytes(), &m)
+	var jsonStr = []byte(`{
+		"enunciado": "enunciado_test_updated",
+		"examenId": 2,
+		"activo": true
+	}`)
 
-// 	if m["id"] != originalPregunta["id"] {
-// 		t.Errorf("Expected the id to remain the same (%v). Got %v", originalPregunta["id"], m["id"])
-// 	}
+	req, _ = http.NewRequest("PUT", "/preguntas/1", bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", token_str)
+	response = executeRequest(req, a)
 
-// 	if m["enunciado"] == originalPregunta["enunciado"] {
-// 		t.Errorf(
-// 			"Expected the enunciado to change from '%v' to '%v'. Got '%v'",
-// 			originalPregunta["enunciado"],
-// 			m["enunciado"],
-// 			originalPregunta["enunciado"],
-// 		)
-// 	}
+	checkResponseCode(t, http.StatusOK, response.Code)
 
-// 	if m["examenId"] == originalPregunta["examenId"] {
-// 		t.Errorf(
-// 			"Expected the examenId to change from '%v' to '%v'. Got '%v'",
-// 			originalPregunta["examenId"],
-// 			m["examenId"],
-// 			originalPregunta["examenId"],
-// 		)
-// 	}
+	var m map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &m)
 
-// 	if m["activo"] == originalPregunta["activo"] {
-// 		t.Errorf(
-// 			"Expected the activo to change from '%v', to '%v'. Got '%v'",
-// 			originalPregunta["activo"],
-// 			m["activo"],
-// 			originalPregunta["activo"],
-// 		)
-// 	}
-// }
+	if m["id"] != originalPregunta["id"] {
+		t.Errorf("Expected the id to remain the same (%v). Got %v", originalPregunta["id"], m["id"])
+	}
 
-// func TestDeletePregunta(t *testing.T) {
-// 	clearTableUsuario()
-// 	addPreguntas(1)
-// 	ensureAuthorizedUserExists()
-// 	token := getTestJWT()
-// 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+	if m["enunciado"] == originalPregunta["enunciado"] {
+		t.Errorf(
+			"Expected the enunciado to change from '%v' to '%v'. Got '%v'",
+			originalPregunta["enunciado"],
+			m["enunciado"],
+			originalPregunta["enunciado"],
+		)
+	}
 
-// 	req, _ := http.NewRequest("GET", "/preguntas/1", nil)
-// 	req.Header.Set("Authorization", token_str)
-// 	response := executeRequest(req, a)
-// 	checkResponseCode(t, http.StatusOK, response.Code)
+	if m["examenId"] == originalPregunta["examenId"] {
+		t.Errorf(
+			"Expected the examenId to change from '%v' to '%v'. Got '%v'",
+			originalPregunta["examenId"],
+			m["examenId"],
+			originalPregunta["examenId"],
+		)
+	}
 
-// 	req, _ = http.NewRequest("DELETE", "/preguntas/1", nil)
-// 	req.Header.Set("Authorization", token_str)
-// 	response = executeRequest(req, a)
-// 	checkResponseCode(t, http.StatusOK, response.Code)
-// }
+	if m["activo"] == originalPregunta["activo"] {
+		t.Errorf(
+			"Expected the activo to change from '%v', to '%v'. Got '%v'",
+			originalPregunta["activo"],
+			m["activo"],
+			originalPregunta["activo"],
+		)
+	}
+}
 
-// const tablePreguntaCreationQuery = `
-// CREATE TABLE IF NOT EXISTS preguntas
-// 	(
-// 		id INT PRIMARY KEY,
-// 		enunciado TEXT NOT NULL,
-// 		examenId INT REFERENCES examenes(id),
+func TestDeletePregunta(t *testing.T) {
+	utils.ClearTableUsuario(a.DB)
+	utils.AddPreguntas(1, a.DB)
+	ensureAuthorizedUserExists()
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-// 		activo BOOLEAN NOT NULL,
-// 		createdAt TIMESTAMPTZ NOT NULL,
-// 		updatedAt TIMESTAMPTZ NOT NULL
-// 	)
-// `
+	req, _ := http.NewRequest("GET", "/preguntas/1", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
+	checkResponseCode(t, http.StatusOK, response.Code)
 
-// // es posible hacer decouple de `a.DB`?
-// func ensureTablePreguntaExists() {
-// 	ensureTableExamenExists()
-// 	_, err := a.DB.Exec(context.Background(), tablePreguntaCreationQuery)
-// 	if err != nil {
-// 		log.Printf("TEST: error creando tabla preguntass: %s", err)
-// 	}
-// }
-
-// func clearTablePregunta() {
-// 	a.DB.Exec(context.Background(), "DELETE FROM preguntass")
-// 	a.DB.Exec(context.Background(), "ALTER SEQUENCE preguntass_id_seq RESTART WITH 1")
-// }
-
-// func addPreguntas(count int) {
-// 	clearTableExamen()
-// 	addExamenes(count)
-// 	now := time.Now()
-
-// 	if count < 1 {
-// 		count = 1
-// 	}
-
-// 	for i := 0; i < count; i++ {
-// 		a.DB.Exec(
-// 			context.Background(),
-// 			`INSERT INTO preguntass(enunciado, examenId, activo, createdAt, updatedAt)
-// 			VALUES($1, $2, $3, $4, $5)`,
-// 			"enunciado_"+strconv.Itoa(i),
-// 			i+1, i%2 == 0, now, now)
-// 	}
-// }
+	req, _ = http.NewRequest("DELETE", "/preguntas/1", nil)
+	req.Header.Set("Authorization", token_str)
+	response = executeRequest(req, a)
+	checkResponseCode(t, http.StatusOK, response.Code)
+}
