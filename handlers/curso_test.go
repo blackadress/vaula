@@ -10,25 +10,25 @@ import (
 	"github.com/blackadress/vaula/utils"
 )
 
-// func TestEmptyCursoTable(t *testing.T) {
-// 	utils.ClearTableCurso(a.DB)
-// 	utils.ClearTableUsuario(a.DB)
-// 	ensureAuthorizedUserExists()
+func TestEmptyCursoTable(t *testing.T) {
+	utils.ClearTableCurso(a.DB)
+	utils.ClearTableUsuario(a.DB)
+	ensureAuthorizedUserExists()
 
-// 	token := getTestJWT()
-// 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-// 	req, _ := http.NewRequest("GET", "/cursos", nil)
-// 	req.Header.Set("Authorization", token_str)
-// 	response := executeRequest(req, a)
+	req, _ := http.NewRequest("GET", "/cursos", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
 
-// 	checkResponseCode(t, http.StatusOK, response.Code)
+	checkResponseCode(t, http.StatusOK, response.Code)
 
-// 	body := response.Body.String()
-// 	if body != "[]" {
-// 		t.Errorf("Se esperaba un array vacio. Se obtuvo %#v", body)
-// 	}
-// }
+	body := response.Body.String()
+	if body != "[]" {
+		t.Errorf("Se esperaba un array vacio. Se obtuvo %#v", body)
+	}
+}
 
 func TestGetNonExistentCurso(t *testing.T) {
 	utils.ClearTableCurso(a.DB)

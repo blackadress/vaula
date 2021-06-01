@@ -67,11 +67,11 @@ func (a *App) initializeRoutes() {
 	a.Router.Handle("/cursos/{id:[0-9]+}", isAuthorized(a.deleteCursoHandler)).Methods("DELETE")
 
 	// examen
-	a.Router.Handle("/examenes{id:[0-9]+}", isAuthorized(a.getExamenByIdHandler)).Methods("GET")
+	a.Router.Handle("/examenes/{id:[0-9]+}", isAuthorized(a.getExamenByIdHandler)).Methods("GET")
 	a.Router.Handle("/examenes", isAuthorized(a.getExamenesHandler)).Methods("GET")
 	a.Router.Handle("/examenes", isAuthorized(a.createExamenHandler)).Methods("POST")
-	a.Router.Handle("/examenes{id:[0-9]+}", isAuthorized(a.updateExamenHandler)).Methods("PUT")
-	a.Router.Handle("/examenes{id:[0-9]+}", isAuthorized(a.deleteExamenHandler)).Methods("DELETE")
+	a.Router.Handle("/examenes/{id:[0-9]+}", isAuthorized(a.updateExamenHandler)).Methods("PUT")
+	a.Router.Handle("/examenes/{id:[0-9]+}", isAuthorized(a.deleteExamenHandler)).Methods("DELETE")
 
 	// pregunta
 	a.Router.Handle("/preguntas/{id:[0-9]+}", isAuthorized(a.getPreguntaByIdHandler)).Methods("GET")
