@@ -1,17 +1,13 @@
 package handlers
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"testing"
 
-	"github.com/joho/godotenv"
+	"github.com/blackadress/vaula/models"
 	"github.com/blackadress/vaula/utils"
+	"github.com/joho/godotenv"
 )
 
 var a App
@@ -42,67 +38,40 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	// limpiar las tablas de la BD
-	// utils.ClearTableAlternativa(a.DB)
-	// utils.ClearTableUsuario(a.DB)
-	// utils.ClearTableAlumno(a.DB)
-	// utils.ClearTableCurso(a.DB)
-	// utils.ClearTableExamen(a.DB)
-	// utils.ClearTablePregunta(a.DB)
-	// utils.ClearTableProfesor(a.DB)
-	// utils.ClearTableTrabajo(a.DB)
+	// ClearTableAlumno(db) ya reseteado por ClearTableUsuario
+	// ClearTableProfesor(db) ya reseteado por ClearTableUsuario
+	utils.ClearTableUsuario(a.DB)
+	utils.ClearTableCurso(a.DB)
+	utils.ClearTableAlternativa(a.DB)
+	// ClearTableExamen(db) ya reseteado por ClearTableCurso
+	// ClearTablePregunta(db) ya reseteado por ClearTableCurso
+	// ClearTableTrabajo(db) ya reseteado por ClearTableCurso
+	// ClearTablePreguntaTrabajo(db) ya reseteado por ClearTableCurso
 	os.Exit(code)
 }
 
-type Temp_jwt struct {
-	UserId       int
-	AccessToken  string
-	RefreshToken string
-}
+func getTestJWT() models.JWToken {
+	usuario := models.User{Username: "prueba", Password: "prueba"}
 
-func getTestJWT() Temp_jwt {
-	userJson, err := json.Marshal(map[string]string{
-		"username": "prueba", "password": "prueba"})
+	err := usuario.GetUserByUsername(a.DB)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error no se encuentra el usuario prueba para autorización, %s", err)
 	}
-	url := fmt.Sprintf("%s%s", BASE_URL, "/api/token")
 
-	resp, err := http.Post(url, "application/json",
-		bytes.NewBuffer(userJson))
+	token, err := usuario.GetJWTForUser()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error inesperado en GetJWTForUser, %s", err)
 	}
-	defer resp.Body.Close()
 
-	var jwt Temp_jwt
-	res, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	json.Unmarshal(res, &jwt)
-
-	return jwt
-	//checkResponseCode(t, http.StatusOK, response.Code)
-
+	return token
 }
 
 func ensureAuthorizedUserExists() {
-	var userJson = []byte(`
-	{
-		"username": "prueba",
-		"password": "prueba",
-		"email": "prueba@pru.eba"
-	}`)
-	req, _ := http.NewRequest("POST",
-		"http://localhost:8000/users",
-		bytes.NewBuffer(userJson))
-	req.Header.Set("Content-Type", "application/json")
+	user := models.User{Username: "prueba", Password: "prueba", Email: "prueba@pru.eba", Activo: true}
+	user.Password = hashAndSalt([]byte(user.Password))
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	err := user.CreateUser(a.DB)
 	if err != nil {
-		log.Fatalf("Algo inesperado paso %s, probablemente el servidor no este activo", err)
+		log.Fatalf("Error en el metodo CreateUser, %s", err)
 	}
-
-	resp.Body.Close()
 }
