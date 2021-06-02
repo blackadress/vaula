@@ -81,12 +81,12 @@ func TestCreateAlternativa(t *testing.T) {
 		t.Errorf("Expected user 'valor' to be 'val_alt_test'. Got '%v'", m["valor"])
 	}
 
-	if m["correcto"] == "true" {
-		t.Errorf("Expected 'correcto' to be 'true'. Got '%#v'", m["correcto"])
+	if m["correcto"] != true {
+		t.Errorf("Expected 'correcto' to be 'true'. Got '%v'", m["correcto"])
 	}
 
-	if m["activo"] == "true" {
-		t.Errorf("Expected 'activo' to be 'true'. Got '%#v'", m["activo"])
+	if m["activo"] != true {
+		t.Errorf("Expected 'activo' to be 'true'. Got '%v'", m["activo"])
 	}
 
 	if m["id"] != 1.0 {
@@ -141,7 +141,8 @@ func TestUpdateAlternativa(t *testing.T) {
 	json.Unmarshal(response.Body.Bytes(), &m)
 
 	if m["id"] != originalAlternativa["id"] {
-		t.Errorf("Expected the id to remain the same (%v). Got %v", originalAlternativa["id"], m["id"])
+		t.Errorf("Expected the id to remain the same (%v). Got %v",
+			originalAlternativa["id"], m["id"])
 	}
 
 	if m["valor"] == originalAlternativa["valor"] {
