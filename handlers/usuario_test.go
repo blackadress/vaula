@@ -1,94 +1,97 @@
 package handlers
 
-// los test necesitan que la aplicacion este funcionando para
-// poder probar los JWT
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"testing"
 
-// import (
-// 	"bytes"
-// 	"context"
-// 	"encoding/json"
-// 	"fmt"
-// 	"log"
-// 	"net/http"
-// 	"strconv"
-// 	"testing"
-// 	"time"
-// )
+	"github.com/blackadress/vaula/models"
+	"github.com/blackadress/vaula/utils"
+)
 
-// func TestEmptyUsuarioTable(t *testing.T) {
-// 	clearTableUsuario()
-// 	ensureAuthorizedUserExists()
+func TestEmptyUsuarioTable(t *testing.T) {
+	utils.ClearTableUsuario(a.DB)
+	ensureAuthorizedUserExists()
 
-// 	token := getTestJWT()
-// 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-// 	req, _ := http.NewRequest("GET", "/users", nil)
-// 	req.Header.Set("Authorization", token_str)
-// 	response := executeRequest(req, a)
+	req, _ := http.NewRequest("GET", "/users", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
 
-// 	checkResponseCode(t, http.StatusOK, response.Code)
+	checkResponseCode(t, http.StatusOK, response.Code)
 
-// 	body := response.Body.String()
-// 	if body != `[{"id":1,"username":"prueba","password":"","email":"prueba@pru.eba"}]` {
-// 		t.Errorf("Expected an array with one element. Got %#v", body)
-// 	}
-// }
+	var data []models.User
+	_ = json.Unmarshal(response.Body.Bytes(), &data)
 
-// func TestGetNonExistentUsuario(t *testing.T) {
-// 	clearTableUsuario()
-// 	ensureAuthorizedUserExists()
-// 	token := getTestJWT()
-// 	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
+	if len(data) != 1 {
+		t.Errorf("Expected an array with one element. Got %#v", response.Body.String())
+	}
+}
 
-// 	req, _ := http.NewRequest("GET", "/users/11", nil)
-// 	req.Header.Set("Authorization", token_str)
-// 	response := executeRequest(req, a)
+func TestGetNonExistentUsuario(t *testing.T) {
+	utils.ClearTableUsuario(a.DB)
+	ensureAuthorizedUserExists()
+	token := getTestJWT()
+	token_str := fmt.Sprintf("Bearer %s", token.AccessToken)
 
-// 	checkResponseCode(t, http.StatusNotFound, response.Code)
+	req, _ := http.NewRequest("GET", "/users/11", nil)
+	req.Header.Set("Authorization", token_str)
+	response := executeRequest(req, a)
 
-// 	var m map[string]string
-// 	json.Unmarshal(response.Body.Bytes(), &m)
-// 	if m["error"] != "User not found" {
-// 		t.Errorf(
-// 			"Expected the 'error' key of the response to be set to 'User not found'. Got '%s'",
-// 			m["error"])
-// 	}
-// }
+	checkResponseCode(t, http.StatusNotFound, response.Code)
 
-// func TestCreateUser(t *testing.T) {
-// 	clearTableUsuario()
+	var m map[string]string
+	json.Unmarshal(response.Body.Bytes(), &m)
+	if m["error"] != "User not found" {
+		t.Errorf(
+			"Expected the 'error' key of the response to be set to 'User not found'. Got '%s'",
+			m["error"])
+	}
+}
 
-// 	var jsonStr = []byte(`
-// 	{
-// 		"username": "user_test",
-// 		"password": "1234",
-// 		"email": "user_test@test.ts"
-// 	}`)
-// 	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(jsonStr))
-// 	req.Header.Set("Content-Type", "application/json")
+func TestCreateUser(t *testing.T) {
+	utils.ClearTableUsuario(a.DB)
 
-// 	response := executeRequest(req, a)
-// 	checkResponseCode(t, http.StatusCreated, response.Code)
+	var jsonStr = []byte(`
+	{
+		"username": "user_test",
+		"password": "1234",
+		"email": "user_test@test.ts",
+		"activo": true
+	}`)
+	req, _ := http.NewRequest("POST", "/users", bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
 
-// 	var m map[string]interface{}
-// 	json.Unmarshal(response.Body.Bytes(), &m)
+	response := executeRequest(req, a)
+	checkResponseCode(t, http.StatusCreated, response.Code)
 
-// 	if m["username"] != "user_test" {
-// 		t.Errorf("Expected user username to be 'user_test'. Got '%v'", m["username"])
-// 	}
+	var m map[string]interface{}
+	json.Unmarshal(response.Body.Bytes(), &m)
 
-// 	if m["password"] == "1234" {
-// 		t.Errorf("Expected password to have been hashed, it is still '%v'", m["password"])
-// 	}
+	if m["username"] != "user_test" {
+		t.Errorf("Expected user username to be 'user_test'. Got '%v'", m["username"])
+	}
 
-// 	if m["email"] != "user_test@test.ts" {
-// 		t.Errorf("Expected user email to be 'user_test@test.ts'. Got '%v'", m["email"])
-// 	}
+	if m["password"] == "1234" {
+		t.Errorf("Expected password to have been hashed, it is still '%v'", m["password"])
+	}
 
-// 	if m["id"] != 1.0 {
-// 		t.Errorf("Expected user ID to be '1'. Got '%v'", m["id"])
-// 	}
-// }
+	if m["email"] != "user_test@test.ts" {
+		t.Errorf("Expected user email to be 'user_test@test.ts'. Got '%v'", m["email"])
+	}
+
+	if m["activo"] != true {
+		t.Errorf("Expected user activo to be 'true'. Got '%v'", m["activo"])
+	}
+
+	if m["id"] != 1.0 {
+		t.Errorf("Expected user ID to be '1'. Got '%v'", m["id"])
+	}
+}
 
 // func TestGetUser(t *testing.T) {
 // 	clearTableUsuario()
