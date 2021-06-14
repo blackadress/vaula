@@ -229,7 +229,7 @@ func (a *App) refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
+	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Minute {
 		respondWithError(w, http.StatusUnauthorized, "Demasiado pronto para pedir nuevo token")
 		return
 	}

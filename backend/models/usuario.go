@@ -121,24 +121,26 @@ type Claims struct {
 }
 
 type JWToken struct {
-	UserId       int    `json:"userId"`
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
+	UserId            int       `json:"userId"`
+	AccessToken       string    `json:"accessToken"`
+	RefreshToken      string    `json:"refreshToken"`
+	ExpirationAccess  time.Time `json:"expirationAcess"`
+	ExpirationRefresh time.Time `json:"expirationRefresh"`
 }
 
 func (u *User) GetJWTForUser() (JWToken, error) {
 	var token JWToken
-	expirationTime := time.Now().Add(time.Minute * 30)
+	expirationTimeAccess := time.Now().Add(time.Minute * 30)
 	// TODO test refresh time token
 	// expirationTime := time.Now().Add(time.Second * 3)
 
-	validToken, err := generateJWT(expirationTime, u.ID)
+	validToken, err := generateJWT(expirationTimeAccess, u.ID)
 	if err != nil {
 		log.Printf("Error inesperado generando access token")
 		return token, err
 	}
 
-	expirationTime = time.Now().Add(time.Hour * 24 * 7)
+	expirationTime := time.Now().Add(time.Hour * 24 * 7)
 	refreshToken, err := generateJWT(expirationTime, u.ID)
 	if err != nil {
 		log.Printf("Error inesperado generando refresh token")
@@ -146,9 +148,11 @@ func (u *User) GetJWTForUser() (JWToken, error) {
 	}
 
 	token = JWToken{
-		UserId:       u.ID,
-		AccessToken:  validToken,
-		RefreshToken: refreshToken,
+		UserId:            u.ID,
+		AccessToken:       validToken,
+		RefreshToken:      refreshToken,
+		ExpirationAccess:  expirationTimeAccess,
+		ExpirationRefresh: expirationTime,
 	}
 	return token, err
 }
