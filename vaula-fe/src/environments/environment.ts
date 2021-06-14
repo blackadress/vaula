@@ -3,7 +3,10 @@
 // The list of file replacements can be found in `angular.json`.
 
 export const environment = {
-  production: false
+  production: false,
+  devBaseUrl: "http://localhost:8000/",
+  TIEMPO_VALIDEZ_TOKEN: 30 * 60 * 1000 - 5000,
+  TIEMPO_VALIDEZ_REFRESH_TOKEN: 7 * 24 * 60 * 60 * 1000,
 };
 
 /*
