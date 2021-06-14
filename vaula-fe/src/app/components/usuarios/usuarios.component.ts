@@ -12,6 +12,8 @@ export class UsuariosComponent implements OnInit {
 
   ngOnInit(): void {
     const usuario = new Usuario(1, "user_test", "1234", "nada@ts.s", true);
-    this.authService.getToken(usuario).subscribe(token => console.log(token));
+    this.authService.auth(usuario.username, usuario.password);
+    const tkn = this.authService.getTokenFromLS();
+    console.log(tkn);
   }
 }
