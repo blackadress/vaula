@@ -1,22 +1,22 @@
 export enum ApiPaths {
   // auth
-  auth = "/api/login",
-  refreshToken = "/api/refresh",
-  logout = "/api/logout",
+  auth = "api/token",
+  refreshToken = "api/refresh",
+  logout = "api/logout",
 
-  users = "/users",
+  users = "users",
 
-  alternativas = "/alternativas",
+  alternativas = "alternativas",
 
-  alumnos = "/alumnos",
+  alumnos = "alumnos",
 
-  cursos = "/cursos",
+  cursos = "cursos",
 
-  examenes = "/examenes",
+  examenes = "examenes",
 
-  preguntas = "/preguntas",
+  preguntas = "preguntas",
 
-  profesores = "/profesores",
+  profesores = "profesores",
 
-  trabajos = "/trabajos",
+  trabajos = "trabajos",
 }
