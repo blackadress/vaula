@@ -146,6 +146,7 @@ func (a *App) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
 
 //
 func (a *App) auth(w http.ResponseWriter, r *http.Request) {
+
 	// attackers shouldn't know if a username exists on the DB
 	// so we should roughly take the same amount of time
 	// either if the user exists or doesn't
@@ -164,6 +165,8 @@ func (a *App) auth(w http.ResponseWriter, r *http.Request) {
 
 	var uFetched models.User
 	uFetched.Username = u.Username
+
+	// CORS
 
 	// therefore, this piece of code can't respond without using a 'CompareHashAndPassword',
 	// but can't send a response just after checking
@@ -203,7 +206,7 @@ func (a *App) auth(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) refresh(w http.ResponseWriter, r *http.Request) {
 	if r.Header["Refresh"] == nil {
-		log.Printf("POST %s code: %d ERROR: %s", r.RequestURI,
+		log.Printf("GET %s code: %d ERROR: %s", r.RequestURI,
 			http.StatusOK, "Cabecera no contiene 'Refresh' token")
 		respondWithError(w, http.StatusBadRequest, "")
 		return
@@ -274,8 +277,9 @@ func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handle
 			isTokenValid, _, err := models.ValidateToken(tkn)
 
 			if err != nil {
-				log.Printf("POST %s code: %d", r.RequestURI, http.StatusBadRequest)
-				respondWithError(w, http.StatusBadRequest, "Invalid user or password")
+				log.Printf("POST %s code: %d ERROR: %s", r.RequestURI,
+					http.StatusUnauthorized, err.Error())
+				respondWithError(w, http.StatusUnauthorized, "Invalid user or password")
 			}
 
 			if isTokenValid {
