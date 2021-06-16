@@ -124,7 +124,7 @@ type JWToken struct {
 	UserId            int       `json:"userId"`
 	AccessToken       string    `json:"accessToken"`
 	RefreshToken      string    `json:"refreshToken"`
-	ExpirationAccess  time.Time `json:"expirationAcess"`
+	ExpirationAccess  time.Time `json:"expirationAccess"`
 	ExpirationRefresh time.Time `json:"expirationRefresh"`
 }
 
@@ -157,8 +157,6 @@ func (u *User) GetJWTForUser() (JWToken, error) {
 	return token, err
 }
 
-// vale verga cuando se le da un token que no es
-// revisar el como se handlean los errores
 func ValidateToken(tkn string) (bool, Claims, error) {
 	secretKey := []byte(os.Getenv("SECRET_KEY"))
 
@@ -167,7 +165,8 @@ func ValidateToken(tkn string) (bool, Claims, error) {
 		tkn,
 		claims,
 		func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			_, ok := token.Method.(*jwt.SigningMethodHMAC)
+			if !ok {
 				log.Printf("Unexpected signing method: %v", token.Header["alg"])
 				return nil, jwt.ErrSignatureInvalid
 			}
@@ -175,7 +174,7 @@ func ValidateToken(tkn string) (bool, Claims, error) {
 		})
 
 	if err != nil {
-		return token.Valid, *claims, err
+		return false, *claims, err
 	}
 
 	return token.Valid, *claims, err
