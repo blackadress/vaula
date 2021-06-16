@@ -1,8 +1,10 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { map } from "rxjs/operators";
+import { shareReplay } from "rxjs/operators";
 import { ApiPaths } from "src/environments/paths";
 import { Observable, of, throwError } from "rxjs";
+import { environment } from "../../environments/environment";
 
 class Token {
   accessToken: string = "";
@@ -11,12 +13,20 @@ class Token {
   expirationRefresh: Date = new Date();
 }
 
+// interface httpHeaders {
+//   headers: {
+//     "Content-Type": string;
+//     "Authorization": string;
+//   };
+// }
+
 @Injectable({
   providedIn: "root",
 })
 export class AuthService {
-  private url = "http://localhost:8000/api/token";
-  private urlRefresh = "http://localhost:8000/api/refresh";
+  private url = `${environment.url}/${ApiPaths.auth}`;
+  private urlRefresh = `${environment.url}/${ApiPaths.refreshToken}`;
+  private urlLogout = `${environment.url}/${ApiPaths.logout}`;
   private opts = {
     headers: {
       "Content-Type": "application/json",
@@ -24,21 +34,29 @@ export class AuthService {
   };
   constructor(private http: HttpClient) {}
 
-  auth(username: string, password: string): void {
-    const authUser = {
-      username: username,
-      password: password,
-    };
-    this.http.post<Token>(this.url, authUser, this.opts)
-      .subscribe(token => {
-        localStorage.setItem("token", JSON.stringify(token));
-      });
+  auth(username: string, password: string): Observable<Token> {
+    // async auth(username: string, password: string): Promise<any> {
+    console.log(this.url);
+    return this.http.post<Token>(this.url, { username, password }, this.opts)
+      .pipe(
+        map(token => {
+          localStorage.setItem("token", JSON.stringify(token));
+          return token;
+        }),
+      );
+    // return fetch("http://localhost:8000/api/token", {
+    //   method: "POST",
+    //   headers: this.opts.headers,
+    //   body: JSON.stringify({ username, password }),
+    // })
+    // .then(res => res.json())
+    // .then(tkn => console.log(tkn));
   }
 
   getTokenFromLS(): Token {
     let tkn = new Token();
     const tknStr = localStorage.getItem("token");
-    if (tknStr) {
+    if (!tknStr) {
       console.error("No hay token en el localStorage");
     } else if (typeof tknStr === "string") {
       tkn = JSON.parse(tknStr);
@@ -47,34 +65,60 @@ export class AuthService {
   }
 
   refreshToken(tkn: Token): Observable<Token> {
-    return this.http.post<Token>(this.urlRefresh, tkn, this.opts)
+    const headers = {
+      headers: {
+        "Content-Type": "application/json",
+        "Refresh": `${tkn.refreshToken}`,
+      },
+    };
+    return this.http.get<Token>(this.urlRefresh, headers)
       .pipe(
         map(token => {
           localStorage.setItem("token", JSON.stringify(token));
           return token;
         }),
+        shareReplay(),
       );
   }
 
-  refreshAccessToken(): Observable<Token> {
+  validateToken(): Observable<Token> {
     const tkn = this.getTokenFromLS();
-    const now = new Date();
-    const segundos_5 = 5000;
-    if (tkn.expirationRefresh.getTime() - now.getTime() > segundos_5) {
+    if (!this.isLoggedIn()) {
       this.logout();
+      // en lugar de lanzar error, redireccionar a login o home
       throw throwError("El Refresh Token es muy antiguo");
-    } else if (tkn.expirationAccess.getTime() - now.getTime() < segundos_5) {
+    } else if (this.isAccessTokenExpired()) {
       return this.refreshToken(tkn);
-    } else if (tkn.expirationAccess.getTime() - now.getTime() > segundos_5) {
-      return of(tkn);
     } else {
-      throw throwError("WTF");
+      return of(tkn);
     }
   }
 
+  isLoggedIn(): boolean {
+    const expRefresh: Date = this.getExpirationRefresh();
+    const now = new Date();
+    return expRefresh.getTime() - now.getTime() > 5000;
+  }
+
+  isAccessTokenExpired(): boolean {
+    const expAccess = this.getExpirationAccess();
+    const now = new Date();
+    return expAccess.getTime() - now.getTime() < 5000;
+  }
+
+  getExpirationAccess(): Date {
+    const token = this.getTokenFromLS();
+    return new Date(token.expirationAccess);
+  }
+
+  getExpirationRefresh(): Date {
+    const token = this.getTokenFromLS();
+    return new Date(token.expirationRefresh);
+  }
+
   logout(): void {
-    this.http.get(ApiPaths.logout).subscribe(
-      _success => localStorage.clear(),
+    this.http.get(this.urlLogout).subscribe(
+      _success => localStorage.removeItem("token"),
       err => console.error(err),
     );
   }
