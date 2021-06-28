@@ -8,7 +8,7 @@ export class Usuario {
   updatedAt: Date;
 
   constructor(
-    id: number,
+    id = 0,
     username: string,
     password: string,
     email: string,

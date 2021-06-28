@@ -36,7 +36,6 @@ export class AuthService {
 
   auth(username: string, password: string): Observable<Token> {
     // async auth(username: string, password: string): Promise<any> {
-    console.log(this.url);
     return this.http.post<Token>(this.url, { username, password }, this.opts)
       .pipe(
         map(token => {
@@ -44,13 +43,6 @@ export class AuthService {
           return token;
         }),
       );
-    // return fetch("http://localhost:8000/api/token", {
-    //   method: "POST",
-    //   headers: this.opts.headers,
-    //   body: JSON.stringify({ username, password }),
-    // })
-    // .then(res => res.json())
-    // .then(tkn => console.log(tkn));
   }
 
   getTokenFromLS(): Token {
