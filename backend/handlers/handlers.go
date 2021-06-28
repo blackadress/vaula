@@ -98,6 +98,9 @@ func (a *App) initializeRoutes() {
 }
 
 func (a *App) Run(addr string) {
-	handler := cors.Default().Handler(a.Router)
+	handler := cors.New(cors.Options{
+		AllowedHeaders: []string{"Accept", "Content-Type", "Authorization"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "HEAD"},
+	}).Handler(a.Router)
 	log.Fatal(http.ListenAndServe(addr, handler))
 }
